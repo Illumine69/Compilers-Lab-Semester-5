@@ -1,14 +1,14 @@
 run: a.out
-	./a.out < ass3_21CS10057_21CS30058.c
+	./a.out < ass3_21CS10057_21CS30058_test.c
 
 stdrun: a.out
 	./a.out
 
 a.out: yylex.c
-	gcc lex.yy.c ass3_21CS10057_21CS30058.c
+	gcc lex.yy.c -lfl
 
 yylex.c:
-	lex ass3_21CS10057_21CS30058.l 
+	flex ass3_21CS10057_21CS30058.l ass3_21CS10057_21CS30058.c
 
 clean:
 	rm a.out yylex.c

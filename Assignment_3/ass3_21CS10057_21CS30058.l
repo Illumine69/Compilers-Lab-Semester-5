@@ -61,11 +61,11 @@ PUNCTUATOR          [{}()\[\].->++--&*+-~!/%<<>><><=>=!=^|&&||?:;...=*=/=%=+=-=<
 
 %%
 
-{KEYWORD}               { return KEYWORD; }
-{IDENTIFIER}            { return IDENTIFIER; }
-{CONSTANT}              { return CONSTANT; }
-{STRING_LITERAL}        { return STRING_LITERAL; }
-{PUNCTUATOR}            { return PUNCTUATOR; }
+KEYWORD               { return KEYWORD; }
+IDENTIFIER            { return IDENTIFIER; }
+CONSTANT              { return CONSTANT; }
+STRING_LITERAL        { return STRING_LITERAL; }
+PUNCTUATOR            { return PUNCTUATOR; }
 
 %%
 
