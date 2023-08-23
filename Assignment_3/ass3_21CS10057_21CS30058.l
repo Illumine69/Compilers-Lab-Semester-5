@@ -18,7 +18,7 @@ Assignment 3: Lexer for tinyC
 /*** regular definitions ***/
 
 /** keywords **/
-KEYWORD         "auto"| "break"| "case"| "char"| "const"| "continue"| "default"| "do"| "double"| "else"| "enum"| "extern"| "float"| "for"| "goto"| "if"| "inline"| "int"| "long"| "register"| "restrict"| "return"| "short"| "signed"| "sizeof"| "static"| "struct"| "switch"| "typedef"| "union"| "unsigned"| "void"| "volatile"| "while"|"_Bool"|"_Complex"|"_Imaginary"
+KEYWORD        "auto"| "break"| "case"| "char"| "const"| "continue"| "default"| "do"| "double"| "else"| "enum"| "extern"| "float"| "for"| "goto"| "if"| "inline"| "int"| "long"| "register"| "restrict"| "return"| "short"| "signed"| "sizeof"| "static"| "struct"| "switch"| "typedef"| "union"| "unsigned"| "void"| "volatile"| "while"|"_Bool"|"_Complex"|"_Imaginary"
 
 /** idetifiers **/
 DIGIT          [0-9]
@@ -47,6 +47,8 @@ C_CHAR              [^\'\\\n]|({ESCAPE_SEQUENCE})
 C_CHAR_SEQUENCE      {C_CHAR}+
 CHARACTER_CONSTANT   "\'"{C_CHAR_SEQUENCE}"\'"
 
+CONSTANT            {INTEGER_CONSTANT}|{FLOATING_CONSTANT}|{ENUMERATION_CONSTANT}|{CHARACTER_CONSTANT}
+
 /** string literals **/
 S_CHAR              [\"\\\n]|ESCAPE_SEQUENCE
 S_CHAR_SEQUENCE     {S_CHAR}+
@@ -56,3 +58,14 @@ STRING_LITERAL      "\""{S_CHAR_SEQUENCE}?"\""
 PUNCTUATOR          [{}()\[\].->++--&*+-~!/%<<>><><=>=!=^|&&||?:;...=*=/=%=+=-=<<=>>=&=^=|=,#_]
 
 /** comments **/
+
+%%
+
+{KEYWORD}               { return KEYWORD; }
+{IDENTIFIER}            { return IDENTIFIER; }
+{CONSTANT}              { return CONSTANT; }
+{STRING_LITERAL}        { return STRING_LITERAL; }
+{PUNCTUATOR}            { return PUNCTUATOR; }
+
+%%
+
