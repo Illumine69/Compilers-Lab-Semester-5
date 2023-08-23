@@ -6,10 +6,17 @@ Assignment 3: Lexer for tinyC
 */
 
 #include <stdio.h>
-
+#define KEYWORD 1
+#define IDENTIFIER 2
+#define CONSTANT 3
+#define STRING_LITERAL 4
+#define PUNCTUATOR 5
+#define COMMENTS 6
 extern char* yytext;
+extern int yylex();
 int main(){
     int token;
+
     while(token = yylex()){
         switch(token) {
             case KEYWORD: printf("<KEYWORD, %d, %s>\n", token, yytext); break;
@@ -20,4 +27,5 @@ int main(){
             default: printf("<Invalid C literal: %d, %s\n", token, yytext); break;
         }
     }
+    
 }

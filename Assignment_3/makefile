@@ -5,10 +5,10 @@ stdrun: a.out
 	./a.out
 
 a.out: yylex.c
-	gcc lex.yy.c -lfl
+	gcc lex.yy.c  ass3_21CS10057_21CS30058.c -lfl
 
 yylex.c:
-	flex ass3_21CS10057_21CS30058.l ass3_21CS10057_21CS30058.c
+	flex ass3_21CS10057_21CS30058.l
 
 clean:
-	rm a.out yylex.c
+	rm a.out lex.yy.c

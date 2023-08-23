@@ -69,3 +69,6 @@ PUNCTUATOR            { return PUNCTUATOR; }
 
 %%
 
+int yywrap(void){
+    return 1;
+}
