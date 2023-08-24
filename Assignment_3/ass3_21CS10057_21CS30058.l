@@ -1,4 +1,10 @@
-
+/*
+Name: Sanskar Mittal              Roll No:   21CS10057
+Name: Voddula Karthik Reddy       Roll No:   21CS30058
+Semester: 5th
+Assignment 3: Lexer for tinyC
+File: lex file
+*/
 
 %{
 /* define the token codes */
@@ -40,19 +46,19 @@ ENUMERATION_CONSTANT {IDENTIFIER}
 
 /*character constants*/
 ESCAPE_SEQUENCE                 [\'\"\?\\\a\b\f\n\r\t\v]
-C_CHAR[^\'\\\n]|({ESCAPE_SEQUENCE})
+C_CHAR                          [^\'\\\n]|({ESCAPE_SEQUENCE})
 C_CHAR_SEQUENCE                 {C_CHAR}+
 CHARACTER_CONSTANT              "\'"{C_CHAR_SEQUENCE}"\'"
 
 CONSTANT                        {INTEGER_CONSTANT}|{FLOATING_CONSTANT}|{ENUMERATION_CONSTANT}|{CHARACTER_CONSTANT}
 
 /*string literals*/
-S_CHAR                          [\"\\\n]|ESCAPE_SEQUENCE
+S_CHAR                          {C_CHAR}
 S_CHAR_SEQUENCE                 {S_CHAR}+
 STRING_LITERAL                  "\""{S_CHAR_SEQUENCE}?"\""
 
 /*punctuators*/
-PUNCTUATOR                  "["|"]"|"("|")"|"{"|"}"|"."|"->"|"++"|"--"|"&"|"*"|"+"|"-"|"~"|"!"|"/"|"%"|"<<"|">>"|"<"|">"|"<="|">="|"=="|"!="|"^"|"|"|"&&"|"||"|"?"|":"|";"|"..."|","|"#"|"="|"*="|"/="|"%="|"+="|"-="|"<<="|">>="|"&="|"^="|"|="
+PUNCTUATOR                      "["|"]"|"("|")"|"{"|"}"|"."|"->"|"++"|"--"|"&"|"*"|"+"|"-"|"~"|"!"|"/"|"%"|"<<"|">>"|"<"|">"|"<="|">="|"=="|"!="|"^"|"|"|"&&"|"||"|"?"|":"|";"|"..."|","|"#"|"="|"*="|"/="|"%="|"+="|"-="|"<<="|">>="|"&="|"^="|"|="
 
 /*comments*/
 
