@@ -6,7 +6,6 @@ Assignment 3: Lexer for tinyC
 File: test file
 */
 
-
 #include <stdio.h>
 
 void main(){
