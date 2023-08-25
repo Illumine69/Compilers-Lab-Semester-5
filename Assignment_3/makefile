@@ -5,7 +5,7 @@ stdrun: a.out
 	./a.out
 
 a.out: lex.yy.c
-	gcc  lex.yy.c  ass3_21CS10057_21CS30058.c -lfl
+	gcc  lex.yy.c  ass3_21CS10057_21CS30058.c -ll
 
 lex.yy.c:
 	flex ass3_21CS10057_21CS30058.l

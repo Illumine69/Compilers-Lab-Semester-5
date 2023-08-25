@@ -21,6 +21,9 @@ File: lex file
 /*regular definitions*/
 
 /*keywords*/
+SPACE           [ \t\n]
+COMMENTS               ("/*"(.|\n)*"*/")|("//"(.)*)
+
 KEYWORD               "auto"|"break"|"case"|"char"|"const"|"continue"|"default"|"do"|"double"|"else"|"enum"|"extern"|"float"|"for"|"goto"|"if"|"inline"|"int"|"long"|"register"|"restrict"|"return"|"short"|"signed"|"sizeof"|"static"|"struct"|"switch"|"typedef"|"union"|"unsigned"|"void"|"volatile"|"while"|"_Bool"|"_Complex"|"_Imaginary"
 
 /*idetifiers*/
@@ -63,6 +66,9 @@ PUNCTUATOR                      "["|"]"|"("|")"|"{"|"}"|"."|"->"|"++"|"--"|"&"|"
 /*comments*/
 
 %%
+
+{SPACE}                       {;}
+{COMMENTS}                      {return COMMENTS;}
 {KEYWORD}                       { return KEYWORD; }
 {IDENTIFIER}                    { return IDENTIFIER; }
 {CONSTANT}                      { return CONSTANT; }
