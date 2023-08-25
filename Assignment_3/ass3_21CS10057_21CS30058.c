@@ -20,13 +20,13 @@ int main(){
 
     while(token = yylex()){
         switch(token) {
-            case KEYWORD: printf("<KEYWORD, %d,'%s' >\n", token, yytext); break;
-            case IDENTIFIER: printf("<IDENTIFIER, %d, '%s' >\n", token, yytext); break;
-            case CONSTANT: printf("<CONSTANT, %d, '%s' >\n", token, yytext); break;
-            case STRING_LITERAL: printf("<STRING_LITERAL, %d, '%s' >\n", token, yytext); break;
-            case PUNCTUATOR: printf("<PUNCTUATOR, %d, '%s' >\n", token, yytext); break;
-            case COMMENTS:printf("<COMMENTS, %d, '%s' >\n", token, yytext); break;
-            default: printf("<Invalid C literal: %d, '%s' >\n", token, yytext); break;
+            case KEYWORD: printf("<KEYWORD, %d, %s>\n", token, yytext); break;
+            case IDENTIFIER: printf("<IDENTIFIER, %d, %s>\n", token, yytext); break;
+            case CONSTANT: printf("<CONSTANT, %d, %s>\n", token, yytext); break;
+            case STRING_LITERAL: printf("<STRING_LITERAL, %d, %s>\n", token, yytext); break;
+            case PUNCTUATOR: printf("<PUNCTUATOR, %d, %s>\n", token, yytext); break;
+            case COMMENTS:printf("<COMMENTS, %d, %s>\n", token, yytext); break;
+            default: printf("<Invalid C literal: %d, %s>\n", token, yytext); break;
         }
     }
     

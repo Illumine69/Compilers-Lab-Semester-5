@@ -21,21 +21,21 @@ File: lex file
 /*regular definitions*/
 
 /*keywords*/
-SPACE           [ \t\n]
-COMMENTS               ("/*"(.|\n)*"*/")|("//"(.)*)
+SPACE                          [ \t\n]
+COMMENTS                       ("/*"(.|\n)*"*/")|(("//"(.)*)\n)
 
-KEYWORD               "auto"|"break"|"case"|"char"|"const"|"continue"|"default"|"do"|"double"|"else"|"enum"|"extern"|"float"|"for"|"goto"|"if"|"inline"|"int"|"long"|"register"|"restrict"|"return"|"short"|"signed"|"sizeof"|"static"|"struct"|"switch"|"typedef"|"union"|"unsigned"|"void"|"volatile"|"while"|"_Bool"|"_Complex"|"_Imaginary"
+KEYWORD                        "auto"|"break"|"case"|"char"|"const"|"continue"|"default"|"do"|"double"|"else"|"enum"|"extern"|"float"|"for"|"goto"|"if"|"inline"|"int"|"long"|"register"|"restrict"|"return"|"short"|"signed"|"sizeof"|"static"|"struct"|"switch"|"typedef"|"union"|"unsigned"|"void"|"volatile"|"while"|"_Bool"|"_Complex"|"_Imaginary"
 
 /*idetifiers*/
-DIGIT                         [0-9]
-NONDIGIT                       [a-zA-Z_]
+DIGIT                          [0-9]
+NONDIGIT                       [_a-zA-Z]
 IDENTIFIER                     {NONDIGIT}({NONDIGIT}|{DIGIT})*
 
 /*constants*/
 
 /*integer constants*/
 NONZERO_DIGIT                  [1-9]
-INTEGER_CONSTANT               {NONZERO_DIGIT}{DIGIT}*
+INTEGER_CONSTANT               {NONZERO_DIGIT}{DIGIT}*|"0"
 
 /*floating co+-tants*/
 SIGN                           [+-]
@@ -67,13 +67,14 @@ PUNCTUATOR                      "["|"]"|"("|")"|"{"|"}"|"."|"->"|"++"|"--"|"&"|"
 
 %%
 
-{SPACE}                       {;}
-{COMMENTS}                      {return COMMENTS;}
+{SPACE}                         {;}
+{COMMENTS}                      { return COMMENTS; }
 {KEYWORD}                       { return KEYWORD; }
 {IDENTIFIER}                    { return IDENTIFIER; }
 {CONSTANT}                      { return CONSTANT; }
 {STRING_LITERAL}                { return STRING_LITERAL; }
 {PUNCTUATOR}                    { return PUNCTUATOR; }
+
 %%
 
 int yywrap(void){
