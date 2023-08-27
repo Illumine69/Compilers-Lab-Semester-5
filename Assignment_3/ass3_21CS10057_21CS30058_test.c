@@ -16,12 +16,13 @@ void main(){
  	unsigned, void, volatile, while, _Bool, _Complex, _Imaginary;
 
  	
+ 	/* Multi line  comment*/
 
  	// testing identifiers and constants:
  	float abcd = -45.56;
  	int defg = 89;
  	char check[10];
- 	check = "i am assigning value here!\n \t \'";
+ 	check = "/* */";
  	char ch='a';
 
     return 0;
