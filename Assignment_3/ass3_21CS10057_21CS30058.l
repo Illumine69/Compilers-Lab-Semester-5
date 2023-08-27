@@ -67,9 +67,9 @@ PUNCTUATOR                      "["|"]"|"("|")"|"{"|"}"|"."|"->"|"++"|"--"|"&"|"
 
 /*comments*/
 
-COMMENT_Multi_SEQ                   [^*]|[*][^/]
-COMMENT_Multi               "/*"{COMMENT_Multi_SEQ}*"*/"
-COMMENT_Single              "//"[^\n]*\n
+COMMENT_Multi_SEQ               [^*]|[*][^/]
+COMMENT_Multi                   [/][*]{COMMENT_Multi_SEQ}*[*][/]
+COMMENT_Single                  [/][/][^\n]*\n
 
 
 %%
