@@ -17,11 +17,12 @@ void main(){
 
  	
 
+
  	// testing identifiers and constants:
  	float abcd = -45.56;
  	int defg = 89;
  	char check[10];
- 	check = "i am assigning value here!\n \t \'";
+ 	check = "/* */";
  	char ch='a';
 
     return 0;

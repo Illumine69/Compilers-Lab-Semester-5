@@ -15,14 +15,16 @@ File: lex file
 #define CONSTANT 3
 #define STRING_LITERAL 4
 #define PUNCTUATOR 5
-#define COMMENTS 6
+#define COMMENT_Multi 6
+#define COMMENT_Single 7
 %}
 
 /*regular definitions*/
 
-/*keywords*/
+Newline                        \n             
 SPACE                          [ \t\n]
-COMMENTS                       ("/*"(.|\n)*"*/")|(("//"(.)*)\n)
+
+/*keywords*/
 
 KEYWORD                        "auto"|"break"|"case"|"char"|"const"|"continue"|"default"|"do"|"double"|"else"|"enum"|"extern"|"float"|"for"|"goto"|"if"|"inline"|"int"|"long"|"register"|"restrict"|"return"|"short"|"signed"|"sizeof"|"static"|"struct"|"switch"|"typedef"|"union"|"unsigned"|"void"|"volatile"|"while"|"_Bool"|"_Complex"|"_Imaginary"
 
@@ -65,15 +67,24 @@ PUNCTUATOR                      "["|"]"|"("|")"|"{"|"}"|"."|"->"|"++"|"--"|"&"|"
 
 /*comments*/
 
+COMMENT_Multi_SEQ                   [^*]|[*][^/]
+COMMENT_Multi               "/*"{COMMENT_Multi_SEQ}*"*/"
+COMMENT_Single              "//"[^\n]*\n
+
+
 %%
 
+
 {SPACE}                         {;}
-{COMMENTS}                      { return COMMENTS; }
 {KEYWORD}                       { return KEYWORD; }
 {IDENTIFIER}                    { return IDENTIFIER; }
 {CONSTANT}                      { return CONSTANT; }
 {STRING_LITERAL}                { return STRING_LITERAL; }
 {PUNCTUATOR}                    { return PUNCTUATOR; }
+{COMMENT_Single}                      { return COMMENT_Single; }
+
+{COMMENT_Multi}                     {return COMMENT_Multi;}
+
 
 %%
 
