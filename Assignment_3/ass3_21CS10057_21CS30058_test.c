@@ -84,11 +84,13 @@ void main()
 		n%=4;
 		n/=56;
 
+		n=(n>t)?(t);(n);
+
 
 		
 
 		node->next=node;
-
+		goto abc;
 
 
 
@@ -99,6 +101,9 @@ void main()
 	if(n==t){
 
 	}
+
+	abc:
+		int * restrict res;
 
 
 
