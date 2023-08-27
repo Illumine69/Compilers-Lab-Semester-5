@@ -22,12 +22,8 @@ File: lex file
 
 /*comments*/
 
-COMMENT_Single                  "//"[^\n]*"\n"
-COMMENT_Multi_SEQ               [^*]|"*"[^/]
-COMMENT_Multi                   "/*"{COMMENT_Multi_SEQ}*"*/"
-
-/*regular definitions*/
-SPACE                           [ \t\n]
+         
+SPACE                          [ \t\n]
 
 /*keywords*/
 
@@ -55,8 +51,8 @@ FLOATING_CONSTANT               ({FRACTIONAL_CONSTANT}{EXPONENT_PART}?)|({DIGIT_
 ENUMERATION_CONSTANT {IDENTIFIER}
 
 /*character constants*/
-ESCAPE_SEQUENCE                 [\'\"\?\\\a\b\f\n\r\t\v]
-C_CHAR                          [^\'\\\n]|({ESCAPE_SEQUENCE})
+ESCAPE_SEQUENCE                 "\'"|"\""|"\?"|"\\"|"\a"|"\b"|"\f"|"\n"|"\r"|"\t"|"\v"
+C_CHAR                         [^("\'"|"\\"|"\n")]|({ESCAPE_SEQUENCE})
 C_CHAR_SEQUENCE                 {C_CHAR}+
 CHARACTER_CONSTANT              "\'"{C_CHAR_SEQUENCE}"\'"
 
@@ -69,6 +65,12 @@ STRING_LITERAL                  "\""{S_CHAR_SEQUENCE}?"\""
 
 /*punctuators*/
 PUNCTUATOR                      "["|"]"|"("|")"|"{"|"}"|"."|"->"|"++"|"--"|"&"|"*"|"+"|"-"|"~"|"!"|"/"|"%"|"<<"|">>"|"<"|">"|"<="|">="|"=="|"!="|"^"|"|"|"&&"|"||"|"?"|":"|";"|"..."|","|"#"|"="|"*="|"/="|"%="|"+="|"-="|"<<="|">>="|"&="|"^="|"|="
+
+/*comments*/
+
+COMMENT_Multi_SEQ               [^*]|[*][^/]
+COMMENT_Multi                  "/*"{COMMENT_Multi_SEQ}*"*/"
+COMMENT_Single                  "//"[^\n]*\n
 
 
 %%
