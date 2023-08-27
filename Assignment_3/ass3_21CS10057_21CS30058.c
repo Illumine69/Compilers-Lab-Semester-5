@@ -16,6 +16,7 @@ File: main file
 #define PUNCTUATOR 7
 extern char* yytext;
 extern int yylex();
+
 int main(){
     int token;
 
@@ -31,5 +32,4 @@ int main(){
             default: printf("<Invalid C literal: %d, '%s' >\n", token, yytext); break;
         }
     }
-    
 }

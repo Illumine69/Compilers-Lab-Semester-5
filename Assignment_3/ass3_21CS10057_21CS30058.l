@@ -20,9 +20,6 @@ File: lex file
 #define PUNCTUATOR 7
 %}
 
-/*comments*/
-
-         
 SPACE                          [ \t\n]
 
 /*keywords*/

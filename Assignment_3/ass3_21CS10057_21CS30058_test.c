@@ -12,10 +12,6 @@ typedef struct{
 	struct node* next;
 }node;
 
-
-
-
-
 #include <stdio.h>
 
 static int stat;
@@ -28,19 +24,19 @@ void main()
 {
 	// This is a single line comment
 
-
 	/* 
 		This is a multiline comment
 	   This is a multiline comment
 	*/
+
 	int a[200];
+	int u[200];
 	int n=4,i=0;
 	unsigned int t=4;
 	short int shorty=2;
 	register r;
 	char character='c';
 	extern int yylex();
-
 
 	float abcdef =12.3345;
 	long long int c=1E17;
@@ -54,12 +50,8 @@ void main()
 		continue;
 	}
 		i--;
-
-
-
 	do {
 		i++;
-
 	}while(i<n||i<54&&i>32);
 	
 	int size =sizeof(int );
@@ -67,13 +59,13 @@ void main()
 		shorty=t;
 	}
 	else if(shorty<t){
-		node.a=1234;
+		node *node;
+		node->a=1234;
 		n=shorty&t;
 		n=n*4;
-		n=n~4;
+		n=n&(~4);
 		if(n<=t);
 		if(t>=n);
-		...a;
 		n^=t;
 		n+=t;
 		n-=t;
@@ -83,29 +75,13 @@ void main()
 		n>>=t;
 		n%=4;
 		n/=56;
-
 		n=(n>t)?(t):(n);
-
-
-		
-
 		node->next=node;
 		goto abc;
-
-
-
 	}
 	else {
-			
+		n=10;
 	}
-	if(n==t){
-
-	}
-
 	abc:
 		int * restrict res;
-
-
-
-
  }
