@@ -9,6 +9,7 @@ File: test file
 #include <stdio.h>
 
 void main(){
+
     //testing all the keywords here
 	auto, break, case, char, const, continue, default, do, double, else
 	enum, extern, float, for, goto, if, inline, int, long, register
@@ -21,8 +22,7 @@ void main(){
  	// testing identifiers and constants:
  	float abcd = -45.56;
  	int defg = 89;
- 	char check[10];
- 	check = "/* */";
+ 	char check[10] = "/* */";
  	char ch='a';
 
     return 0;

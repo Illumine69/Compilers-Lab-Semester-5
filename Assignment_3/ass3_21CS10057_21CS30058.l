@@ -10,41 +10,46 @@ File: lex file
 /* define the token codes */
 #include<stdio.h>
 #include<string.h>
-#define KEYWORD 1
-#define IDENTIFIER 2
-#define CONSTANT 3
-#define STRING_LITERAL 4
-#define PUNCTUATOR 5
-#define COMMENT_Multi 6
-#define COMMENT_Single 7
+
+#define COMMENT_Multi 1
+#define COMMENT_Single 2
+#define KEYWORD 3
+#define IDENTIFIER 4
+#define CONSTANT 5
+#define STRING_LITERAL 6
+#define PUNCTUATOR 7
 %}
 
-/*regular definitions*/
+/*comments*/
 
-Newline                        \n             
-SPACE                          [ \t\n]
+COMMENT_Single                  "//"[^\n]*"\n"
+COMMENT_Multi_SEQ               [^*]|"*"[^/]
+COMMENT_Multi                   "/*"{COMMENT_Multi_SEQ}*"*/"
+
+/*regular definitions*/
+SPACE                           [ \t\n]
 
 /*keywords*/
 
-KEYWORD                        "auto"|"break"|"case"|"char"|"const"|"continue"|"default"|"do"|"double"|"else"|"enum"|"extern"|"float"|"for"|"goto"|"if"|"inline"|"int"|"long"|"register"|"restrict"|"return"|"short"|"signed"|"sizeof"|"static"|"struct"|"switch"|"typedef"|"union"|"unsigned"|"void"|"volatile"|"while"|"_Bool"|"_Complex"|"_Imaginary"
+KEYWORD                         "auto"|"break"|"case"|"char"|"const"|"continue"|"default"|"do"|"double"|"else"|"enum"|"extern"|"float"|"for"|"goto"|"if"|"inline"|"int"|"long"|"register"|"restrict"|"return"|"short"|"signed"|"sizeof"|"static"|"struct"|"switch"|"typedef"|"union"|"unsigned"|"void"|"volatile"|"while"|"_Bool"|"_Complex"|"_Imaginary"
 
 /*idetifiers*/
-DIGIT                          [0-9]
-NONDIGIT                       [_a-zA-Z]
-IDENTIFIER                     {NONDIGIT}({NONDIGIT}|{DIGIT})*
+DIGIT                           [0-9]
+NONDIGIT                        [_a-zA-Z]
+IDENTIFIER                      {NONDIGIT}({NONDIGIT}|{DIGIT})*
 
 /*constants*/
 
 /*integer constants*/
-NONZERO_DIGIT                  [1-9]
-INTEGER_CONSTANT               {NONZERO_DIGIT}{DIGIT}*|"0"
+NONZERO_DIGIT                   [1-9]
+INTEGER_CONSTANT                {NONZERO_DIGIT}{DIGIT}*|"0"
 
 /*floating co+-tants*/
-SIGN                           [+-]
-DIGIT_SEQUENCE                 {DIGIT}+
-EXPONENT_PART                  ("e"{SIGN}?{DIGIT_SEQUENCE})|(E{SIGN}?{DIGIT_SEQUENCE})
-FRACTIONAL_CONSTANT            ({DIGIT_SEQUENCE}?"."{DIGIT_SEQUENCE})|({DIGIT_SEQUENCE}".")
-FLOATING_CONSTANT              ({FRACTIONAL_CONSTANT}{EXPONENT_PART}?)|({DIGIT_SEQUENCE}{EXPONENT_PART})
+SIGN                            [+-]
+DIGIT_SEQUENCE                  {DIGIT}+
+EXPONENT_PART                   ("e"{SIGN}?{DIGIT_SEQUENCE})|(E{SIGN}?{DIGIT_SEQUENCE})
+FRACTIONAL_CONSTANT             ({DIGIT_SEQUENCE}?"."{DIGIT_SEQUENCE})|({DIGIT_SEQUENCE}".")
+FLOATING_CONSTANT               ({FRACTIONAL_CONSTANT}{EXPONENT_PART}?)|({DIGIT_SEQUENCE}{EXPONENT_PART})
 
 /*enumeration constants*/
 ENUMERATION_CONSTANT {IDENTIFIER}
@@ -65,26 +70,17 @@ STRING_LITERAL                  "\""{S_CHAR_SEQUENCE}?"\""
 /*punctuators*/
 PUNCTUATOR                      "["|"]"|"("|")"|"{"|"}"|"."|"->"|"++"|"--"|"&"|"*"|"+"|"-"|"~"|"!"|"/"|"%"|"<<"|">>"|"<"|">"|"<="|">="|"=="|"!="|"^"|"|"|"&&"|"||"|"?"|":"|";"|"..."|","|"#"|"="|"*="|"/="|"%="|"+="|"-="|"<<="|">>="|"&="|"^="|"|="
 
-/*comments*/
-
-COMMENT_Multi_SEQ               [^*]|[*][^/]
-COMMENT_Multi                   [/][*]{COMMENT_Multi_SEQ}*[*][/]
-COMMENT_Single                  [/][/][^\n]*\n
-
 
 %%
 
-
-{SPACE}                         {;}
+{SPACE}                         { }
 {KEYWORD}                       { return KEYWORD; }
 {IDENTIFIER}                    { return IDENTIFIER; }
 {CONSTANT}                      { return CONSTANT; }
 {STRING_LITERAL}                { return STRING_LITERAL; }
 {PUNCTUATOR}                    { return PUNCTUATOR; }
-{COMMENT_Single}                      { return COMMENT_Single; }
-
-{COMMENT_Multi}                     {return COMMENT_Multi;}
-
+{COMMENT_Single}                { return COMMENT_Single; }
+{COMMENT_Multi}                 {return COMMENT_Multi;}
 
 %%
 
