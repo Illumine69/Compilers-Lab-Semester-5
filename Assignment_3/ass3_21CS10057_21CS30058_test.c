@@ -8,7 +8,7 @@ File: test file
 
 typedef struct{
 	int a;
-	char b[20]="This is a struct";
+	char b[20];
 	struct node* next;
 }node;
 
@@ -68,7 +68,7 @@ void main()
 	}
 	else if(shorty<t){
 		node.a=1234;
-		n=b&t;
+		n=shorty&t;
 		n=n*4;
 		n=n~4;
 		if(n<=t);
@@ -84,7 +84,7 @@ void main()
 		n%=4;
 		n/=56;
 
-		n=(n>t)?(t);(n);
+		n=(n>t)?(t):(n);
 
 
 		
