@@ -1,86 +1,65 @@
-/*
+static int stat;
 
-Name : Vedic Partap
-Roll No. : 16CS10053
+volatile int vola;
 
-*/
-static my = 0;
-register name = 9;
-static is = 12;
-extern vedic = 34;
-void looking_cool()
+inline int add();
+
+void main()
 {
-	learn_AI();
-}
-int main()
-{
-  int n, array[1000], c, d, t;
- 
-  for (c = 0; c < n; c++) {
-    // a &=34;
-  }
- 
-  for (c = 1 ; c <= n - 1; c++) {
-    d = c;
- 
-    while ( d > 0 && array[d-1] > array[d]) {
-      t          = array[d];
-      array[d]   = array[d-1];
-      array[d-1] = t;
- 
-      d--;
-    }
-  }
-  int  s = 67.4;
-  float b = 23;
-  a = b+45;
+	// This is a single line comment
 
-  for (c = 0; c <= n - 1; c++) {
-    vedic==partap;
-  }
+	/* 
+		This is a multiline comment
+	   This is a multiline comment
+	*/
 
-	a++;
-	b--;
-	b=++a;
-	b=a++;
-	a=b--;
-	a=--b;
-	// checking binary
-	a = b & 1;
-	a = a | 1;
-	a = a ^ 2;
-	a = !a;
-	a = a * c;
-	a = a / b;
-	a = a + b;
-	a = a % 3;
-	a+=2;
-	b-=3;
-	c*=d;
-	c/=5;
-	c%=1;
-	c<<=2;
-	c>>=z;
-	c&=2;
-	c|=1;
-	c^=0;
-	int b = a && c;
-	int bb = b || (c==r) && (!a);
+	int a[200];
+	int u[200];
+	int n=4,i=0;
+	unsigned int t=4;
+	short int shorty=2;
+	register r;
+	char character='c';
+	extern int yylex();
 
-
-	// This is single line comment
-
-	hello +=world;
-	hello-=kitty;
-	for(puupy=0;puppy<45;puppy++)
-		dog = puppy; // animals
-}
-
-void making_timepass_function()
-{
-	while(no_work)
+	float abcdef =12.3345;
+	long long int c=1E17;
+	char b[200]="This is a string\n \t";
+		_Bool b=1;
+		double _Complex cmplx=1;
+	for(auto  i=0;i<n;i++)
 	{
-		time_pass++;
+		i+=4;
+		if(i>3)break;
+		continue;
 	}
-	die;
-}
+		i--;
+	do {
+		i++;
+	}while(i<n||i<54&&i>32);
+	
+	int size =sizeof(int );
+	if(t>shorty){
+		shorty=t;
+	}
+	else if(shorty<t){
+		n=shorty&t;
+		n=n*4;
+		n=n&(~4);
+		if(n<=t);
+		if(t>=n);
+		n^=t;
+		n+=t;
+		n-=t;
+		n|=t;
+		n*=t;
+		n<<=t;
+		n>>=t;
+		n%=4;
+		n/=56;
+		n=(n>t)?(t):(n);
+	} 
+	else{ 
+		n=10;
+	}
+ }

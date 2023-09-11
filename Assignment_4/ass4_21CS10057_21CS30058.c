@@ -1,13 +1,18 @@
 /*
-
-Name : Vedic Partap
-Roll No. : 16CS10053
-
+Name: Sanskar Mittal              Roll No:   21CS10057
+Name: Voddula Karthik Reddy       Roll No:   21CS30058
+Semester: 5th
+Assignment 4: Parser for tinyC
+File: main file
 */
+
 #include <stdio.h>
 #include "y.tab.h"
+
+extern int yylineno;
+
 int main(){
-  	// extern int yydebug;
+	// extern int yydebug;
 	// yydebug=1;
 	int val=yyparse();
 	printf("\n+---------------------------------------+\n\n");
@@ -15,5 +20,7 @@ int main(){
 		printf("Parsing Success\n\n");
 	else
 		printf("Parsing Error \n\n");
+
+	printf("Line number in the input file: %d\n", yylineno);
 	return 0;
 }

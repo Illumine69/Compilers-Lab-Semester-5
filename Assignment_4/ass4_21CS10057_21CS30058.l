@@ -3,23 +3,52 @@
 #include "y.tab.h"
 %}
 
-SINGLELINE_COMMENT  \/\/.*	
-MULTILINE_COMMENT	\/\*([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*\/
-IDENTIFIER			[_a-zA-Z][_a-zA-Z0-9]*
-DIGIT		 		[0-9]
-INTEGER_CONST		[1-9]{DIGIT}*|0
-FLOATING_CONST		(((([0-9]+)?\.[0-9]+)|([0-9]+\.))([eE][+-]?[0-9]+)?)|([0-9]+[eE][+-]?[0-9]+)
-ENUMERATION_CONST	[_a-zA-Z][_a-zA-Z0-9]* 
-ESCAPE_SEQUENCE		\\['"?\\abfnrtv]
-C_CHAR				[^'\\\n]|{ESCAPE_SEQUENCE}
-C_CHAR_SEQUENCE		{C_CHAR}+
-CHARACTER_CONST		\'{C_CHAR_SEQUENCE}\'
-CONSTANT            {INTEGER_CONST}|{FLOATING_CONST}|{ENUMERATION_CONST}|{CHARACTER_CONST}
-S_CHAR				[^"\\\n]|{ESCAPE_SEQUENCE}
-PUNCTUATOR			"["|"]"|"."|"&"|"*"|"+"|"-"|"~"|"!"|"/"|"("|")"|"{"|"}"|"%"|","|"<"|">"|"^"|"|"|"="|"?"|":"|";"|"#"
-S_CHAR_SEQUENCE		{S_CHAR}+
-STRING_LITERAL		\"{S_CHAR_SEQUENCE}?\"
-WS 					[ \t\n]
+SPACE                          [ \t]
+NEW_LINE                       \n
+
+/*idetifiers*/
+DIGIT                           [0-9]
+NONDIGIT                        [_a-zA-Z]
+IDENTIFIER                      {NONDIGIT}({NONDIGIT}|{DIGIT})*
+
+/*constants*/
+
+/*integer constants*/
+NONZERO_DIGIT                   [1-9]
+INTEGER_CONSTANT                {NONZERO_DIGIT}{DIGIT}*|"0"
+
+/*floating co+-tants*/
+SIGN                            [+-]
+DIGIT_SEQUENCE                  {DIGIT}+
+EXPONENT_PART                   ("e"{SIGN}?{DIGIT_SEQUENCE})|(E{SIGN}?{DIGIT_SEQUENCE})
+FRACTIONAL_CONSTANT             ({DIGIT_SEQUENCE}?"."{DIGIT_SEQUENCE})|({DIGIT_SEQUENCE}".")
+FLOATING_CONSTANT               ({FRACTIONAL_CONSTANT}{EXPONENT_PART}?)|({DIGIT_SEQUENCE}{EXPONENT_PART})
+
+/*enumeration constants*/
+ENUMERATION_CONSTANT {IDENTIFIER}
+
+/*character constants*/
+ESCAPE_SEQUENCE                 "\'"|"\""|"\?"|"\\"|"\a"|"\b"|"\f"|"\n"|"\r"|"\t"|"\v"
+C_CHAR                         [^("\'"|"\\"|"\n")]|({ESCAPE_SEQUENCE})
+C_CHAR_SEQUENCE                 {C_CHAR}+
+CHARACTER_CONSTANT              "\'"{C_CHAR_SEQUENCE}"\'"
+
+CONSTANT                        {INTEGER_CONSTANT}|{FLOATING_CONSTANT}|{ENUMERATION_CONSTANT}|{CHARACTER_CONSTANT}
+
+/*string literals*/
+S_CHAR                          {C_CHAR}
+S_CHAR_SEQUENCE                 {S_CHAR}+
+STRING_LITERAL                  "\""{S_CHAR_SEQUENCE}?"\""
+
+/*punctuators*/
+PUNCTUATOR                      "["|"]"|"("|")"|"{"|"}"|"."|"->"|"++"|"--"|"&"|"*"|"+"|"-"|"~"|"!"|"/"|"%"|"<<"|">>"|"<"|">"|"<="|">="|"=="|"!="|"^"|"|"|"&&"|"||"|"?"|":"|";"|"..."|","|"#"|"="|"*="|"/="|"%="|"+="|"-="|"<<="|">>="|"&="|"^="|"|="
+
+/*comments*/
+
+COMMENT_Multi_SEQ               [^*]|[*][^/]
+COMMENT_Multi                  "/*"{COMMENT_Multi_SEQ}*"*/"
+COMMENT_Single                  "//"[^\n]*\n
+
 
 %%
 "->"				{return RIGHT_ARROW;}
@@ -81,13 +110,15 @@ WS 					[ \t\n]
 "_Bool"				{return BOOL;}
 "_Complex"			{return COMPLEX;}
 "_Imaginary"		{return IMAGINARY;}
+
 {IDENTIFIER}		{return IDENTIFIER;}
-{INTEGER_CONST}		{return INTEGER_NO;} 
-{FLOATING_CONST}	{return FLOAT_NO;}
-{CHARACTER_CONST}	{return CHARACTER;}
+{INTEGER_CONSTANT}		{return INTEGER_NO;} 
+{FLOATING_CONSTANT}	{return FLOAT_NO;}
+{CHARACTER_CONSTANT}	{return CHARACTER;}
 {STRING_LITERAL}	{return STRING;}
 {PUNCTUATOR}		{return yytext[0];}
-{SINGLELINE_COMMENT}    {}
-{MULTILINE_COMMENT}	{}
-{WS}				{}
+{COMMENT_Single}    {}
+{COMMENT_Multi}	{}
+{NEW_LINE}			{ yylineno++; } 
+{SPACE}				{}
 %%
