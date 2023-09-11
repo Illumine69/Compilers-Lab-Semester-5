@@ -428,31 +428,47 @@ enumerator:
 
 type_qualifier:
         CONST
+        { printf("type_qualifier -> const\n"); }
         |RESTRICT
+        { printf("type_qualifier -> restrict\n"); }
         |VOLATILE
+        { printf("type_qualifier -> volatile\n"); }
         ;
 
 function_specifier:
           INLINE
+          { printf("function_specifier -> inline\n"); }
           ;
 
 declarator:
       pointer_optional direct_declarator
+      { printf("declarator -> pointer_opt direct_declarator\n"); }
       ;
 
 direct_declarator:
            IDENTIFIER
+           { printf("direct_declarator -> identifier\n"); }
            |'(' declarator ')'
-           |direct_declarator '[' type_qualifier_list_optional assignment_expression_optional ']'
+           { printf("direct_declarator -> ( declarator )\n"); }
+           |direct_declarator '[' type_qualifier_list_optional 
+           assignment_expression_optional ']'
+           { printf("direct_declarator -> direct_declarator [ type_qualifier_list_opt assignment_expression_opt ]\n"); }
            |direct_declarator '[' STATIC type_qualifier_list_optional assignment_expression ']'
+           { printf("direct_declarator -> direct_declarator [ static type_qualifier_list_opt assignment_expression ]\n"); }
            |direct_declarator '[' type_qualifier_list_optional '*' ']'
+           { printf("direct_declarator -> direct_declarator [ type_qualifier_list_opt * ]\n"); }
            |direct_declarator '(' parameter_type_list ')'
+           { printf("direct_declarator -> direct_declarator ( parameter_type_list )\n"); }
+
            |direct_declarator '(' identifier_list_optional ')'
+           { printf("direct_declarator -> direct_declarator ( identifier_list_opt )\n"); }
            ;
 
 pointer:
      '*' type_qualifier_list_optional
+     { printf("pointer -> * type_qualifier_list_opt\n"); }
      |'*' type_qualifier_list_optional pointer
+     { printf("pointer -> * type_qualifier_list_opt pointer\n"); }
      ;
 
 pointer_optional:
@@ -462,7 +478,9 @@ pointer_optional:
 
 type_qualifier_list:
            type_qualifier
+           { printf("type_qualifier_list -> type_qualifier\n"); }
            |type_qualifier_list type_qualifier
+           { printf("type_qualifier_list -> type_qualifier_list type_qualifier\n"); }
            ;
 
 type_qualifier_list_optional:
@@ -472,22 +490,31 @@ type_qualifier_list_optional:
 
 parameter_type_list:
            parameter_list
+           { printf("parameter_type_list -> parameter_list\n"); }
            |parameter_list ',' ELLIPSIS
+           { printf("parameter_type_list -> parameter_list , ...\n"); }
            ;
 
 parameter_list:
         parameter_declaration
+        { printf("parameter_list -> parameter_declaration\n"); }
         |parameter_list ',' parameter_declaration
+        { printf("parameter_list -> parameter_list , parameter_declaration\n"); }
         ;
 
 parameter_declaration:
            declaration_specifiers declarator
+           { printf("parameter_declaration -> declaration_specifiers declarator\n"); }
            |declaration_specifiers
+           { printf("parameter_declaration -> declaration_specifiers\n"); }
            ;
 
 identifier_list:
          IDENTIFIER
+         { printf("type_name -> specifier_qualifier_list\n"); }
+
          |identifier_list ',' IDENTIFIER
+         { printf("identifier_list -> identifier_list , identifier\n"); }
          ;
 
 identifier_list_optional:
@@ -497,17 +524,23 @@ identifier_list_optional:
 
 type_name:
      specifier_qualifier_list
+     { printf("type_name -> specifier_qualifier_list\n"); }
      ;
 
 initializer:
        assignment_expression
+       { printf("initializer -> assignment_expression\n"); }
        |'{' initializer_list '}'
+       { printf("initializer -> { initializer_list }\n"); }
        |'{' initializer_list ',' '}'
+       { printf("initializer -> { initializer_list , }\n"); }
        ;
 
 initializer_list:
         designation_optional initializer
+        { printf("initializer_list -> designation_opt initializer\n"); }
         |initializer_list ',' designation_optional initializer
+        { printf("initializer_list -> initializer_list , designation_opt initializer\n"); }
         ;
 
 designation:

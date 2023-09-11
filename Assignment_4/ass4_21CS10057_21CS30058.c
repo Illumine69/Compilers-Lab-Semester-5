@@ -12,8 +12,8 @@ int main(){
 	int val=yyparse();
 	printf("\n+---------------------------------------+\n\n");
 	if(!val)
-		printf("Successs :)\n\n");
+		printf("Parsing Success\n\n");
 	else
-		printf("Error :(\n\n");
+		printf("Parsing Error \n\n");
 	return 0;
 }
