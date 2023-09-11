@@ -22,7 +22,7 @@ STRING_LITERAL		\"{S_CHAR_SEQUENCE}?\"
 WS 					[ \t\n]
 
 %%
-"->"				{return ARROW;}
+"->"				{return RIGHT_ARROW;}
 "++"				{return INCREMENT;}
 "--"				{return DECREMENT;}
 "<<"				{return LSHIFT;}
@@ -34,16 +34,16 @@ WS 					[ \t\n]
 "&&"				{return BINARY_AND;}
 "||"				{return BINARY_OR;}
 "..."				{return ELLIPSIS;}
-"*="				{return STAR_EQUAL;}
-"/="				{return SLASH_EQUAL;}
-"%="				{return PERCENTILE_EQUAL;}
-"+="				{return PLUS_EQUAL;}
-"-="				{return MINUS_EQUAL;}
-"<<="				{return LEFT_SHIFT_EQUAL;}
-">>="				{return RIGHT_SHIFT_EQUAL;}
-"&="				{return AND_EQUAL;}
-"^="				{return XOR_EQUAL;}
-"|="				{return OR_EQUAL;}
+"*="				{return MUL_ASSIGN;}
+"/="				{return DIV_ASSIGN;}
+"%="				{return MOD_ASSIGN;}
+"+="				{return ADD_ASSIGN;}
+"-="				{return SUB_ASSIGN;}
+"<<="				{return LSHIFT_ASSIGN;}
+">>="				{return RSHIFT_ASSIGN;}
+"&="				{return AND_ASSIGN;}
+"^="				{return XOR_ASSIGN;}
+"|="				{return OR_ASSIGN;}
 "auto"				{return AUTO;}
 "break"				{return BREAK;}
 "case"				{return CASE;}

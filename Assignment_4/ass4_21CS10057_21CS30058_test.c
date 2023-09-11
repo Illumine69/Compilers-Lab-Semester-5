@@ -84,5 +84,3 @@ void making_timepass_function()
 	}
 	die;
 }
-
-

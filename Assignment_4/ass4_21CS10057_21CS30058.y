@@ -11,7 +11,7 @@ void yyerror(const char*);
   char *charval;
 }
 
-%token ARROW
+%token RIGHT_ARROW
 %token INCREMENT
 %token DECREMENT
 %token LSHIFT
@@ -23,16 +23,16 @@ void yyerror(const char*);
 %token BINARY_AND
 %token BINARY_OR
 %token ELLIPSIS
-%token STAR_EQUAL
-%token SLASH_EQUAL
-%token PERCENTILE_EQUAL
-%token PLUS_EQUAL
-%token MINUS_EQUAL
-%token LEFT_SHIFT_EQUAL
-%token RIGHT_SHIFT_EQUAL
-%token AND_EQUAL
-%token XOR_EQUAL
-%token OR_EQUAL
+%token MUL_ASSIGN
+%token DIV_ASSIGN
+%token MOD_ASSIGN
+%token ADD_ASSIGN
+%token SUB_ASSIGN
+%token LSHIFT_ASSIGN
+%token RSHIFT_ASSIGN
+%token AND_ASSIGN
+%token XOR_ASSIGN
+%token OR_ASSIGN
 %token AUTO
 %token BREAK 
 %token CASE 
@@ -70,8 +70,8 @@ void yyerror(const char*);
 %token BOOL
 %token COMPLEX
 %token IMAGINARY
-%token SINGLE_COMMENT
-%token MULTI_COMMENT
+%token COMMENT_MULTI
+%token COMMENT_SINGLE
 %token IDENTIFIER
 %token <intval> INTEGER_NO
 %token <intval> FLOAT_NO
@@ -99,7 +99,7 @@ postfix_expression:
           |postfix_expression '[' expression ']'
           |postfix_expression '(' argument_expression_list_optional ')'
             |postfix_expression '.' IDENTIFIER
-            |postfix_expression ARROW IDENTIFIER
+            |postfix_expression RIGHT_ARROW IDENTIFIER
             |postfix_expression INCREMENT 
             |postfix_expression DECREMENT
             |'(' type_name ')' '{' initializer_list '}'
@@ -214,16 +214,16 @@ assignment_expression_optional:
 
 assignment_operator:
            '='
-           |STAR_EQUAL
-           |SLASH_EQUAL
-           |PERCENTILE_EQUAL
-           |PLUS_EQUAL
-           |MINUS_EQUAL
-           |LEFT_SHIFT_EQUAL
-           |RIGHT_SHIFT_EQUAL
-           |AND_EQUAL
-           |XOR_EQUAL
-           |OR_EQUAL
+           |MUL_ASSIGN
+           |DIV_ASSIGN
+           |MOD_ASSIGN
+           |ADD_ASSIGN
+           |SUB_ASSIGN
+           |LSHIFT_ASSIGN
+           |RSHIFT_ASSIGN
+           |AND_ASSIGN
+           |XOR_ASSIGN
+           |OR_ASSIGN
            ;             
 
 expression:
