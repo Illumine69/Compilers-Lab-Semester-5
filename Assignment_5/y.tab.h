@@ -34,7 +34,7 @@
 /* DO NOT RELY ON FEATURES THAT ARE NOT DOCUMENTED in the manual,
    especially those whose name start with YY_ or yy_.  They are
    private implementation details that can be changed or removed.  */
-
+#include "ass5_21CS10057_21CS30058_translator.h"
 #ifndef YY_YY_Y_TAB_H_INCLUDED
 # define YY_YY_Y_TAB_H_INCLUDED
 /* Debug traces.  */
@@ -207,9 +207,9 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 25 "ass5_21CS10057_21CS30058.y"
+#line 27 "ass5_21CS10057_21CS30058.y"
 
-
+//#include "ass5_21CS10057_21CS30058_translator.h"
   int instr;
   sym* symp;
   int intval;
