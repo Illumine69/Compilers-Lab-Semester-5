@@ -8,12 +8,7 @@ File: translator header file
 
 #ifndef TRANSLATOR_H
 #define TRANSLATOR_H
-#include <iostream>
-#include <string>
-#include <vector>
-#include <list>
-#include <map>
-#include <iomanip>
+#include<bits/stdc++.h>
 
 using namespace std;
 
