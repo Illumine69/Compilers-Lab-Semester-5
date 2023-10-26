@@ -20,4 +20,4 @@ lex.yy.c : y.tab.h ass5_21CS10057_21CS30058.l
 y.tab.c y.tab.h: ass5_21CS10057_21CS30058.y
 	bison -dy ass5_21CS10057_21CS30058.y
 clean:
-	rm *tab* *yy* *.out ./Test_Outputs/*.out
+	rm *tab* *yy* *.out
