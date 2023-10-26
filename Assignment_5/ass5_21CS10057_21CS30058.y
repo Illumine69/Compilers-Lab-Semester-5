@@ -18,6 +18,7 @@ extern int yylineno;
 void yyerror(const char*);
 void printinfo(char*);
 extern "C" int yylex();
+extern string Type;
 
 
 %}
