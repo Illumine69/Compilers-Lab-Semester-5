@@ -9,8 +9,9 @@ File: lex file
 %{
 #include <stdio.h>
 #include <string.h>
-#include "y.tab.h"
+
 #include "ass5_21CS10057_21CS30058_translator.h"
+#include "y.tab.h"
 extern "C" int yylex();
 %}
 
@@ -122,11 +123,12 @@ COMMENT_Single                  "//"[^\n]*\n
 "_Complex"			{return COMPLEX;}
 "_Imaginary"		{return IMAGINARY;}
 
-{IDENTIFIER}		{return IDENTIFIER;}
-{INTEGER_CONSTANT}		{return INTEGER_NO;} 
-{FLOATING_CONSTANT}	{return FLOAT_NO;}
-{CHARACTER_CONSTANT}	{return CHARACTER;}
-{STRING_LITERAL}	{return STRING;}
+{IDENTIFIER}		{yylval.symp = currTable->lookup(yytext);
+return IDENTIFIER;}
+{INTEGER_CONSTANT}		{yylval.intval = atoi(yytext);return INTEGER_NO;} 
+{FLOATING_CONSTANT}	{yylval.charval = yytext;return FLOAT_NO;}
+{CHARACTER_CONSTANT}	{	yylval.charval = yytext;return CHARACTER;}
+{STRING_LITERAL}	{yylval.charval = yytext;return STRING;}
 {PUNCTUATOR}		{return yytext[0];}
 {COMMENT_Single}    {}
 {COMMENT_Multi}	{}
