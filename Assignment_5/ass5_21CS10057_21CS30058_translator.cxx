@@ -15,6 +15,7 @@ string Type;							// Stores latest type
 symtable* currTable;					// Points to current symbol currTable
 sym* currSymbol; 					    // points to current symbol
 
+// Utility Functions for printing the symbol table
 void printOnScreen(char a, int count)
 {
 	for(int i = 0;i < count;i++){
@@ -23,11 +24,39 @@ void printOnScreen(char a, int count)
 	cout << endl;
 }
 
+// Constructor for symbol type
 symtype::symtype(string name, symtype* ptr, int width): 
 	type (name), 
 	ptr (ptr), 
 	width (width) {};
 
+// Constructor for symbol
+sym::sym (string name, string t, symtype* ptr, int width): name(name)  {
+	type = new symtype (t, ptr, width);
+	nested = NULL;
+	initial_value = "";
+	offset = 0;
+	size = size_type(type);
+}
+
+sym* sym::update(symtype* t) {
+	type = t;
+	this -> size = size_type(t);
+	return this;
+}
+
+void printRow(sym temp)
+{
+	cout << left << setw(20) << temp.name;
+	string stype = print_type(temp.type);
+	cout << left << setw(25) << stype;
+	cout << left << setw(17) << temp.initial_value;
+	cout << left << setw(12) << temp.size;
+	cout << left << setw(11) << temp.offset;
+	cout << left;
+}
+
+// Constructors for quad
 quad::quad (string res, string argA, string operation, string argB):
 	answer (res), argument1(argA), argument2(argB), operator1(operation){};
 
@@ -148,32 +177,8 @@ void quadArray::print() {
 	printOnScreen('=',30);
 }
 
-sym::sym (string name, string t, symtype* ptr, int width): name(name)  {
-	type = new symtype (t, ptr, width);
-	nested = NULL;
-	initial_value = "";
-	offset = 0;
-	size = size_type(type);
-}
-
-sym* sym::update(symtype* t) {
-	type = t;
-	this -> size = size_type(t);
-	return this;
-}
 
 symtable::symtable (string name): name (name), count(0) {};
-
-void printRow(sym temp)
-{
-	cout << left << setw(20) << temp.name;
-	string stype = print_type(temp.type);
-	cout << left << setw(25) << stype;
-	cout << left << setw(17) << temp.initial_value;
-	cout << left << setw(12) << temp.size;
-	cout << left << setw(11) << temp.offset;
-	cout << left;
-}
 
 void symtable::print() {
 	list<symtable*> tablelist;
