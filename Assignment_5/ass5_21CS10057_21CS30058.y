@@ -19,6 +19,7 @@ void yyerror(const char*);
 void printinfo(char*);
 extern "C" int yylex();
 extern string Type;
+using namespace std;
 
 
 %}
@@ -1481,7 +1482,7 @@ block_item_list:
          $$=$1;
          }
          |block_item_list M block_item
-         { printinfo("block_item_list -> block_item_list block_item\n"); 
+         { //printinfo("block_item_list -> block_item_list block_item\n"); 
 
                 $$=$3;
                 backpatch ($1->nextlist, $2);
