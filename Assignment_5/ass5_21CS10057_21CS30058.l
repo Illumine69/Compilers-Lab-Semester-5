@@ -11,6 +11,7 @@ File: lex file
 #include <string.h>
 #include "y.tab.h"
 #include "ass5_21CS10057_21CS30058_translator.h"
+extern "C" int yylex();
 %}
 
 SPACE                          [ \t]
