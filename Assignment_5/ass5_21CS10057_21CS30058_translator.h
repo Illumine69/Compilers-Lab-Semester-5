@@ -12,6 +12,8 @@ File: translator header file
 #include <string>
 #include <vector>
 #include <list>
+#include <map>
+#include <iomanip>
 
 using namespace std;
 

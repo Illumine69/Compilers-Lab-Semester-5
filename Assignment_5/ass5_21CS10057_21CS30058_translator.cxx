@@ -1,19 +1,18 @@
-#include "translator.h"
-
-using namespace std;
+#include "ass5_21CS10057_21CS30058_translator.h"
 
 //reference to global variables declared in header file 
 symtable* globalTable;					// Global Symbbol Table
 quadArray q;							// Quad Array
 string Type;							// Stores latest type
-symtable* currTable;						// Points to current symbol currTable
-sym* currSymbol; 					// points to current symbol
+symtable* currTable;					// Points to current symbol currTable
+sym* currSymbol; 					    // points to current symbol
 
-void printOnScreen(char a, int cnt)
+void printOnScreen(char a, int count)
 {
-	for(int i=0;i<cnt;i++)
-		cout<<a;
-	cout<<endl;
+	for(int i = 0;i < count;i++){
+		cout << a;
+	}
+	cout << endl;
 }
 
 symtype::symtype(string name, symtype* ptr, int width): 
@@ -35,14 +34,13 @@ quad::quad (string res, float argA, string operation, string argB):
 	}
 
 void quad::print () {
-
 	
 	// Equal operation
 	if (operator1=="EQUAL")			cout << answer << " = " << argument1 ;
 
-	else if(operator1 == "GOTOOP")   cout <<	 "goto " << answer; 
+	else if(operator1 == "GOTOOP")  cout << "goto " << answer; 
 
-	else if (operator1=="PTRL")		cout << "*" << answer	<< " = " << argument1 ;			
+	else if (operator1=="PTRL")		cout << "*" << answer << " = " << argument1 ;			
 	
 	else if (operator1=="ARRR")	 	cout << answer << " = " << argument1 << "[" << argument2 << "]";
 	
@@ -52,9 +50,9 @@ void quad::print () {
 	
 	else if (operator1=="PARAM") 	cout << "param " << answer;
 	
-	else if (operator1=="CALL") 		cout << answer << " = " << "call " << argument1<< ", " << argument2;
+	else if (operator1=="CALL") 	cout << answer << " = " << "call " << argument1<< ", " << argument2;
 	
-	else if (operator1=="LABEL")		cout << answer << ": ";
+	else if (operator1=="LABEL")	cout << answer << ": ";
 
 	else
 	{
@@ -126,10 +124,10 @@ void quadArray::print() {
 	cout << "Quad Translation" << endl;
 	printOnScreen('-',30);
 
-	int cnt = 0;
+	int count = 0;
 	for (quad temp : qArray) {
 		if (temp.operator1 != "LABEL") {
-			cout << "\t" << setw(4) << cnt << ":\t";
+			cout << "\t" << setw(4) << count << ":\t";
 			temp.print();
 		}
 		else {
@@ -137,7 +135,7 @@ void quadArray::print() {
 			temp.print();
 			cout << "\n";
 		}
-		cnt++;
+		count++;
 	}
 	printOnScreen('=',30);
 }
@@ -190,7 +188,6 @@ void symtable::print() {
 	printOnScreen('-',100);
 	
 	for (auto it = currTable.begin(); it!=currTable.end(); it++) {
-
 		printRow(*it);
 		if (it->nested == NULL) {
 			cout << "null" <<  endl;	
@@ -295,7 +292,6 @@ sym* conv (sym* s, string t) {
 	return s;
 }
 
-
 bool typecheck(sym*& s1, sym*& s2){ 	// Check if the symbols have same type or not
 	symtype* type1 = s1->type;
 	symtype* type2 = s2->type;
@@ -307,13 +303,19 @@ bool typecheck(sym*& s1, sym*& s2){ 	// Check if the symbols have same type or n
 
 bool typecheck(symtype* t1, symtype* t2){ 	// Check if the symbol types are same or not
 	
-	if(t1 == NULL && t2 == NULL)
+	if(t1 == NULL && t2 == NULL){
 		return true;
-	
-		if (t1==NULL) return false;
-		if (t2==NULL) return false;
-		if (t1->type != t2->type) return false;
-		return typecheck(t1->ptr, t2->ptr);
+	}
+	if (t1==NULL){
+		return false;
+	}
+	if (t2==NULL){
+		return false;
+	} 
+	if (t1->type != t2->type){
+		return false;
+	}
+	return typecheck(t1->ptr, t2->ptr);
 }
 
 void backpatch (list <int> l, int addr) {
@@ -400,6 +402,7 @@ string print_type (symtype* t){
 	else return "_";
 }
 
+// Main Function
 int  main (int argc, char* argv[]){
 	globalTable = new symtable("Global");
 	currTable = globalTable;
