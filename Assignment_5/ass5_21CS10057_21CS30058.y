@@ -158,59 +158,64 @@ extern "C" int yylex();
 
 %%
 
+
+
+constant
+        :INTEGER_NO {
+        stringstream STring;
+    STring << $1;
+        int zero = 0;
+    string TempString = STring.str();
+    char* Int_STring = (char*) TempString.c_str();
+        string str = string(Int_STring);
+        int one = 1;
+        $$ = gentemp(new symtype("INTEGER"), str);
+        emit("EQUAL", $$->name, $1);
+        }
+        |FLOATING_NO {
+        int zero = 0;
+        int one = 1;
+        $$ = gentemp(new symtype("DOUBLE"), string($1));
+        emit("EQUAL", $$->name, string($1));
+        }
+        |ENUMERATION_CONSTANT  {//later
+        }
+        |CHARACTER {
+        int zero = 0;   
+        int one = 1;
+        $$ = gentemp(new symtype("CHAR"),$1);
+        emit("EQUAL", $$->name, string($1));
+        }
+        ;
+
+
 primary_expression:
-          IDENTIFIER
-          {// printinfo("primary_expression -> identifier\n");
-
-                $$ = new expr();
-                $$->loc = $1;
-                int zero = 0;   
-                int one = 1;
-                $$->type = "NONBOOL";
-                        
-           }
-          |INTEGER_NO
-           {// printinfo("primary_expression -> constant\n"); 
-                 stringstream STring;
-            STring << $1;
-                int zero = 0;
-            string TempString = STring.str();
-            char* Int_STring = (char*) TempString.c_str();
-                string str = string(Int_STring);
-                int one = 1;
-                $$ = gentemp(new symtype("INTEGER"), str);
-                emit("EQUAL", $$->name, $1);
-           }
-          |FLOAT_NO
-           { //printinfo("primary_expression -> constant\n"); 
-
-                $$ = gentemp(new symtype("DOUBLE"), string($1));
-                emit("EQUAL", $$->name, string($1));
-
-           }
-          |CHARACTER
-           { //printinfo("primary_expression -> constant\n");
-
-                $$ = gentemp(new symtype("CHAR"),$1);
-                emit("EQUAL", $$->name, string($1));
-
-            }
-          |STRING
-          { //printinfo("primary_expression -> string-literal\n");
-                  $$ = new expr();
-                symtype* tmp = new symtype("PTR");
-                int zero = 0;   
-                int one = 1;
-                $$->loc = gentemp(tmp, $1);
-                $$->loc->type->ptr = new symtype("CHAR");
-
-           }
-          |'(' expression ')'
-          { printinfo("primary_expression -> string-literal\n");
-                $$ = $2;
-
-           }
-          ;
+          : IDENTIFIER {
+        $$ = new expr();
+        $$->loc = $1;
+        int zero = 0;   
+        int one = 1;
+        $$->type = "NONBOOL";
+        }
+        | constant {
+        $$ = new expr();
+        int zero = 0;   
+        int one = 1;
+        $$->loc = $1;
+        }
+        | STRING {
+        $$ = new expr();
+        symtype* tmp = new symtype("PTR");
+        int zero = 0;   
+        int one = 1;
+        $$->loc = gentemp(tmp, $1);
+        $$->loc->type->ptr = new symtype("CHAR");
+        }
+        | '(' expression ')' {
+        int zero = 0;   
+        int one = 1;
+        $$ = $2;
+        }
 
 postfix_expression:
           primary_expression
