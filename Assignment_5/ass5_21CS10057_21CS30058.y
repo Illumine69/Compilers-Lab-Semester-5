@@ -190,7 +190,7 @@ constant
 
 
 primary_expression:
-          : IDENTIFIER {
+           IDENTIFIER {
         $$ = new expr();
         $$->loc = $1;
         int zero = 0;   
