@@ -8,7 +8,7 @@ File: yacc file
 
 %{
 #include <iostream>
-#include<string.h>
+#include <string.h>
 #include <string>
 #include <stdio.h>
 #include <sstream>
