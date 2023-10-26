@@ -25,7 +25,7 @@ using namespace std;
 %}
 
 %union {
-
+#include "ass5_21CS10057_21CS30058_translator.h"
   int instr;
   sym* symp;
   int intval;
