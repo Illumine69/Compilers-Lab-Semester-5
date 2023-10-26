@@ -172,7 +172,7 @@ constant
         $$ = gentemp(new symtype("INTEGER"), str);
         emit("EQUAL", $$->name, $1);
         }
-        |FLOATING_NO {
+        |FLOAT_NO {
         int zero = 0;
         int one = 1;
         $$ = gentemp(new symtype("DOUBLE"), string($1));
