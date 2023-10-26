@@ -171,10 +171,15 @@ primary_expression:
            }
           |INTEGER_NO
            {// printinfo("primary_expression -> constant\n"); 
-                 string str =string($1);
-                 $$ = gentemp(new symtype("INTEGER"), str);
-                 emit("EQUAL", $$->name, $1);
-
+                 stringstream STring;
+            STring << $1;
+                int zero = 0;
+            string TempString = STring.str();
+            char* Int_STring = (char*) TempString.c_str();
+                string str = string(Int_STring);
+                int one = 1;
+                $$ = gentemp(new symtype("INTEGER"), str);
+                emit("EQUAL", $$->name, $1);
            }
           |FLOAT_NO
            { //printinfo("primary_expression -> constant\n"); 
