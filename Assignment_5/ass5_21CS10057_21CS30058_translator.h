@@ -8,7 +8,10 @@ File: translator header file
 
 #ifndef TRANSLATOR_H
 #define TRANSLATOR_H
-#include <bits/stdc++.h>
+#include <iostream>
+#include <string>
+#include <vector>
+#include <list>
 
 using namespace std;
 
@@ -89,7 +92,7 @@ class symtable {
 public:
 	string name;				    // Name of the symbol table
 	int count;					    // Count of temporary variables
-	list<sym> currTable; 			// The table of symbols
+	list <sym> currTable; 			// The table of symbols
 	symtable* parent;				// Immediate parent of the symbol table
 
 	symtable (string name="NULL");							// Constructor
@@ -103,7 +106,7 @@ public:
 
 //Attributes for statements
 struct statement {
-	list<int> nextlist;				// Nextlist for statement
+	list <int> nextlist;				// Nextlist for statement
 };
 
 //Attributes for array
@@ -123,11 +126,11 @@ struct expr {
 	sym* loc;								// Pointer to the symbol table entry
 
 	// Valid for bool type
-	list<int> truelist;						// Truelist valid for boolean
-	list<int> falselist;					// Falselist valid for boolean expressions
+	list <int> truelist;						// Truelist valid for boolean
+	list <int> falselist;					// Falselist valid for boolean expressions
 
 	// Valid for statement expression
-	list<int> nextlist;
+	list <int> nextlist;
 };
 
 /*      Global functions required for the translator        */
