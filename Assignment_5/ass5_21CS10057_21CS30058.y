@@ -7,11 +7,19 @@ File: yacc file
 */
 
 %{
+#include <iostream>
+#include<string.h>
+#include <string>
 #include <stdio.h>
+#include <sstream>
+#include <cstdlib>
+#include "ass5_21CS10057_21CS30058_translator.h"
 extern int yylineno;
 void yyerror(const char*);
 void printinfo(char*);
 extern "C" int yylex();
+
+
 %}
 
 %union {
@@ -118,7 +126,8 @@ extern "C" int yylex();
 
 
 //Statements
-%type <Stmt>  statement
+%type <Stmt>  
+        statement
         labeled_statement 
         compound_statement
         selection_statement
@@ -127,10 +136,10 @@ extern "C" int yylex();
         block_item
         block_item_list
 
-%type <E>
+%type <E> 
         expression
         primary_expression 
-        multiplicative_expression
+        multplicative_expression
         additive_expression
         shift_expression
         relational_expression
@@ -218,19 +227,33 @@ postfix_expression:
                 $$->type = $1->loc->type;
 
           }
-          |postfix_expression '(' argument_expression_list_optional ')'
+
+          |postfix_expression '('  ')'
+          {}
+          |postfix_expression '(' argument_expression_list ')'
           { //printinfo("postfix_expression -> postfix_expression ( argument_expression_list_opt )\n"); 
                  $$ = new array1();
                 $$->array1 = gentemp($1->type);
                
-                string str = string($3);                
+                $$ = new array1();
+                $$->array1 = gentemp($1->type);
+                stringstream STring;
+            STring <<$3;
+            string TempString = STring.str();
+                int zero = 0;   
+                int one = 1;
+            char* Int_STring = (char*) TempString.c_str();
+                string str = string(Int_STring);                
+                emit("CALL", $$->array1->name, $1->array1->name, str);               
                 emit("CALL", $$->array1->name, $1->array1->name, str);
 
           }
             |postfix_expression '.' IDENTIFIER
-            { //printinfo("postfix_expression -> postfix_expression . identifier\n"); }
+            { //printinfo("postfix_expression -> postfix_expression . identifier\n");
+             }
             |postfix_expression RIGHT_ARROW IDENTIFIER
-            { //printinfo("postfix_expression -> postfix_expression -> identifier\n"); }
+            { //printinfo("postfix_expression -> postfix_expression -> identifier\n"); 
+            }
             |postfix_expression INCREMENT
              { //printinfo("postfix_expression -> postfix_expression ++\n"); 
 
@@ -366,9 +389,11 @@ unary_expression:
 
         }
         |SIZEOF unary_expression
-        { //printinfo("unary_expression -> sizeof unary_expression\n"); }
+        { //printinfo("unary_expression -> sizeof unary_expression\n"); 
+        }
         |SIZEOF '(' type_name ')' 
-        { //printinfo("unary_expression -> sizeof ( type_name ) \n"); }
+        { //printinfo("unary_expression -> sizeof ( type_name ) \n"); 
+        }
         ;          
 
 unary_operator:
@@ -878,39 +903,53 @@ assignment_expression_optional:
 
 assignment_operator:
            '='
-           { //printinfo("assignment_operator -> =\n"); }
+           { //printinfo("assignment_operator -> =\n"); 
+           }
            |MUL_ASSIGN
-           {// printinfo("assignment_operator -> *=\n"); }
+           {// printinfo("assignment_operator -> *=\n");
+            }
            |DIV_ASSIGN
-           { //printinfo("assignment_operator -> /=\n"); }
+           { //printinfo("assignment_operator -> /=\n");
+            }
            |MOD_ASSIGN
-           { //printinfo("assignment_operator -> %%=\n"); }
+           { //printinfo("assignment_operator -> %%=\n");
+            }
            |ADD_ASSIGN
-           { //printinfo("assignment_operator -> +=\n"); }
+           { //printinfo("assignment_operator -> +=\n"); 
+           }
            |SUB_ASSIGN
-           { //printinfo("assignment_operator -> -=\n"); }
+           { //printinfo("assignment_operator -> -=\n"); 
+           }
            |LSHIFT_ASSIGN
-           { //printinfo("assignment_operator -> <<=\n"); }
+           { //printinfo("assignment_operator -> <<=\n"); 
+           }
            |RSHIFT_ASSIGN
-           {// printinfo("assignment_operator -> >>=\n"); }
+           {// printinfo("assignment_operator -> >>=\n"); 
+           }
            |AND_ASSIGN
-           { //printinfo("assignment_operator -> &=\n"); }
+           { //printinfo("assignment_operator -> &=\n"); 
+           }
            |XOR_ASSIGN
-            { //printinfo("assignment_operator -> ^=\n"); }
+            { //printinfo("assignment_operator -> ^=\n"); 
+            }
            |OR_ASSIGN
-           { //printinfo("assignment_operator -> |=\n"); }
+           { //printinfo("assignment_operator -> |=\n"); 
+           }
            ;             
 
 expression:
       assignment_expression
-      { //printinfo("expression -> assignment_expression\n"); }
+      { //printinfo("expression -> assignment_expression\n"); 
+      }
       |expression ',' assignment_expression
-      { //printinfo("expression -> expression , assignment_expression\n"); }
+      { //printinfo("expression -> expression , assignment_expression\n"); 
+      }
       ;
        
 constant_expression:
            conditional_expression
-           { //printinfo("constant_expression -> conditional_expression\n"); }
+           { //printinfo("constant_expression -> conditional_expression\n"); 
+           }
            ;
 
 expression_optional:
@@ -920,18 +959,23 @@ expression_optional:
 
 declaration:
        declaration_specifiers init_declarator_list_optional ';'
-       { //printinfo("declaration -> declaration_specifiers init_declarator_list_opt ;\n"); }
+       { //printinfo("declaration -> declaration_specifiers init_declarator_list_opt ;\n"); 
+       }
        ;
 
 declaration_specifiers:
             storage_class_specifier declaration_specifiers_optional
-            { //printinfo("declaration_specifiers -> storage_class_specifier declaration_specifiers_opt\n"); }
+            { //printinfo("declaration_specifiers -> storage_class_specifier declaration_specifiers_opt\n"); 
+            }
             |type_specifier declaration_specifiers_optional
-            { //printinfo("declaration_specifiers -> type_specifier declaration_specifiers_opt\n"); }
+            { //printinfo("declaration_specifiers -> type_specifier declaration_specifiers_opt\n"); 
+            }
             |type_qualifier declaration_specifiers_optional
-            { //printinfo("declaration_specifiers -> type_qualifier declaration_specifiers_opt\n"); }
+            { //printinfo("declaration_specifiers -> type_qualifier declaration_specifiers_opt\n"); 
+            }
             |function_specifier declaration_specifiers_optional
-            { //printinfo("declaration_specifiers -> function_specifier declaration_specifiers_opt\n"); }
+            { //printinfo("declaration_specifiers -> function_specifier declaration_specifiers_opt\n");
+             }
             ;
 
 declaration_specifiers_optional:
@@ -946,9 +990,11 @@ init_declarator_list_optional:
 
 init_declarator_list:
         init_declarator 
-        { //printinfo("init_declarator_list -> init_declarator\n"); }
+        { //printinfo("init_declarator_list -> init_declarator\n"); 
+        }
         |init_declarator_list ',' init_declarator
-        { //printinfo("init_declarator_list -> init_declarator_list , init_declarator\n"); }
+        { //printinfo("init_declarator_list -> init_declarator_list , init_declarator\n"); 
+        }
         ;
 
 init_declarator:
@@ -967,13 +1013,17 @@ init_declarator:
 
 storage_class_specifier:
              EXTERN
-             { //printinfo("storage_class_specifier -> extern\n"); }
+             { //printinfo("storage_class_specifier -> extern\n"); 
+             }
              |STATIC
-             { //printinfo("storage_class_specifier -> static\n"); }
+             { //printinfo("storage_class_specifier -> static\n"); 
+             }
              |AUTO
-             { //printinfo("storage_class_specifier -> auto\n"); }
+             { //printinfo("storage_class_specifier -> auto\n"); 
+             }
              |REGISTER
-             { //printinfo("storage_class_specifier -> register\n"); }
+             { //printinfo("storage_class_specifier -> register\n"); 
+             }
              ;
 
 type_specifier:
@@ -988,16 +1038,19 @@ type_specifier:
 
          }
         |SHORT
-        {// printinfo("type_specifier -> short\n"); }
+        {// printinfo("type_specifier -> short\n"); 
+        }
         |INT
         { //printinfo("type_specifier -> int\n"); 
         Type="INTEGER";
 
         }
         |LONG
-        {// printinfo("type_specifier -> long\n"); }
+        {// printinfo("type_specifier -> long\n"); 
+        }
         |FLOAT
-        { //printinfo("type_specifier -> float\n"); }
+        { //printinfo("type_specifier -> float\n");
+         }
         |DOUBLE
         { //printinfo("type_specifier -> float\n"); 
 
@@ -1005,24 +1058,32 @@ type_specifier:
 
         }
         |SIGNED
-        { //printinfo("type_specifier -> signed\n"); }
+        { //printinfo("type_specifier -> signed\n");
+         }
         |UNSIGNED
-        { //printinfo("type_specifier -> unsigned\n"); }
+        { //printinfo("type_specifier -> unsigned\n"); 
+        }
         |BOOL
-        { //printinfo("type_specifier -> bool\n"); }
+        { //printinfo("type_specifier -> bool\n");
+         }
         |COMPLEX
-        { //printinfo("type_specifier -> complex\n"); }
+        { //printinfo("type_specifier -> complex\n"); 
+        }
         |IMAGINARY
-        { //printinfo("type_specifier -> imaginary\n"); }
+        { //printinfo("type_specifier -> imaginary\n");
+         }
         |enum_specifier
-        { //printinfo("type_specifier -> enum_specifier\n"); }
+        { //printinfo("type_specifier -> enum_specifier\n"); 
+        }
         ;
 
 specifier_qualifier_list:
             type_specifier specifier_qualifier_list_optional
-            { //printinfo("specifier_qualifier_list -> type_specifier specifier_qualifier_list_opt\n"); }
+            { //printinfo("specifier_qualifier_list -> type_specifier specifier_qualifier_list_opt\n");
+             }
             |type_qualifier specifier_qualifier_list_optional
-            { //printinfo("specifier_qualifier_list -> type_qualifier specifier_qualifier_list_opt\n"); }
+            { //printinfo("specifier_qualifier_list -> type_qualifier specifier_qualifier_list_opt\n"); 
+            }
             ;
 
 specifier_qualifier_list_optional:
@@ -1048,20 +1109,24 @@ enumerator:
 
 type_qualifier:
         CONST
-        { //printinfo("type_qualifier -> const\n"); }
+        { //printinfo("type_qualifier -> const\n"); 
+        }
         |RESTRICT
-        { //printinfo("type_qualifier -> restrict\n"); }
+        { //printinfo("type_qualifier -> restrict\n");
+         }
         |VOLATILE
-        { //printinfo("type_qualifier -> volatile\n"); }
+        { //printinfo("type_qualifier -> volatile\n"); 
+        }
         ;
 
 function_specifier:
           INLINE
-          { //printinfo("function_specifier -> inline\n"); }
+          { //printinfo("function_specifier -> inline\n"); 
+          }
           ;
 
 declarator:
-      pointer_optional direct_declarator
+      pointer direct_declarator
       { //printinfo("declarator -> pointer_opt direct_declarator\n"); 
 
       symtype * t = $1;
@@ -1072,6 +1137,8 @@ declarator:
                 $$ = $2->update($1);
 
       }
+      |direct_declarator {
+        }
       ;
 
 direct_declarator:
@@ -1091,9 +1158,9 @@ direct_declarator:
             }
            | direct_declarator '[' type_qualifier_list assignment_expression ']' {
                 }
-        | directDeclarator '[' type_qualifier_list ']' {
+        | direct_declarator '[' type_qualifier_list ']' {
                 }
-           |directDeclarator '[' assignment_expression ']' {
+           |direct_declarator '[' assignment_expression ']' {
                 symtype * t = $1 -> type;
                 symtype * prev = NULL;
                 int zero = 0;   
@@ -1199,7 +1266,7 @@ CT
 
 pointer:
         
-        :'*' type_qualifier_list {
+        '*' type_qualifier_list {
         }
         |'*' {
                 $$ = new symtype("PTR");
@@ -1224,9 +1291,11 @@ pointer_optional:
 
 type_qualifier_list:
            type_qualifier
-           { //printinfo("type_qualifier_list -> type_qualifier\n"); }
+           { //printinfo("type_qualifier_list -> type_qualifier\n"); 
+           }
            |type_qualifier_list type_qualifier
-           { //printinfo("type_qualifier_list -> type_qualifier_list type_qualifier\n"); }
+           { //printinfo("type_qualifier_list -> type_qualifier_list type_qualifier\n"); 
+           }
            ;
 
 type_qualifier_list_optional:
@@ -1236,31 +1305,39 @@ type_qualifier_list_optional:
 
 parameter_type_list:
            parameter_list
-           {// printinfo("parameter_type_list -> parameter_list\n"); }
+           {// printinfo("parameter_type_list -> parameter_list\n"); 
+           }
            |parameter_list ',' ELLIPSIS
-           {// printinfo("parameter_type_list -> parameter_list , ...\n"); }
+           {// printinfo("parameter_type_list -> parameter_list , ...\n"); 
+           }
            ;
 
 parameter_list:
         parameter_declaration
-        { //printinfo("parameter_list -> parameter_declaration\n"); }
+        { //printinfo("parameter_list -> parameter_declaration\n"); 
+        }
         |parameter_list ',' parameter_declaration
-        { //printinfo("parameter_list -> parameter_list , parameter_declaration\n"); }
+        { //printinfo("parameter_list -> parameter_list , parameter_declaration\n"); 
+        }
         ;
 
 parameter_declaration:
            declaration_specifiers declarator
-           { //printinfo("parameter_declaration -> declaration_specifiers declarator\n"); }
+           { //printinfo("parameter_declaration -> declaration_specifiers declarator\n"); 
+           }
            |declaration_specifiers
-           { //printinfo("parameter_declaration -> declaration_specifiers\n"); }
+           { //printinfo("parameter_declaration -> declaration_specifiers\n"); 
+           }
            ;
 
 identifier_list:
          IDENTIFIER
-         { //printinfo("type_name -> specifier_qualifier_list\n"); }
+         { //printinfo("type_name -> specifier_qualifier_list\n");
+          }
 
          |identifier_list ',' IDENTIFIER
-         { //printinfo("identifier_list -> identifier_list , identifier\n"); }
+         { //printinfo("identifier_list -> identifier_list , identifier\n");
+          }
          ;
 
 identifier_list_optional:
@@ -1270,7 +1347,8 @@ identifier_list_optional:
 
 type_name:
      specifier_qualifier_list
-     { //printinfo("type_name -> specifier_qualifier_list\n"); }
+     { //printinfo("type_name -> specifier_qualifier_list\n"); 
+     }
      ;
 
 initializer:
@@ -1282,21 +1360,26 @@ initializer:
 
         }
        |'{' initializer_list '}'
-       { //printinfo("initializer -> { initializer_list }\n"); }
+       { //printinfo("initializer -> { initializer_list }\n"); 
+       }
        |'{' initializer_list ',' '}'
-       { //printinfo("initializer -> { initializer_list , }\n"); }
+       { //printinfo("initializer -> { initializer_list , }\n");
+        }
        ;
 
 initializer_list:
         designation_optional initializer
-        { //printinfo("initializer_list -> designation_opt initializer\n"); }
+        { //printinfo("initializer_list -> designation_opt initializer\n");
+         }
         |initializer_list ',' designation_optional initializer
-        { //printinfo("initializer_list -> initializer_list , designation_opt initializer\n"); }
+        { //printinfo("initializer_list -> initializer_list , designation_opt initializer\n"); 
+        }
         ;
 
 designation:
        designator_list '='
-       { //printinfo("designation -> designator_list =\n"); }
+       { //printinfo("designation -> designator_list =\n"); 
+       }
        ;
 
 designation_optional:
@@ -1306,21 +1389,26 @@ designation_optional:
 
 designator_list:
          designator 
-         { //printinfo("designator_list -> designator\n"); }
+         { //printinfo("designator_list -> designator\n"); 
+         }
          |designator_list designator
-         { //printinfo("designator_list -> designator_list designator\n"); }
+         { //printinfo("designator_list -> designator_list designator\n"); 
+         }
          ;
 
 designator:
       '[' constant_expression ']'
-      { //printinfo("designator -> [ constant_expression ]\n"); }
+      { //printinfo("designator -> [ constant_expression ]\n"); 
+      }
       |'.' IDENTIFIER
-      { //printinfo("designator -> . identifier\n"); }
+      { //printinfo("designator -> . identifier\n");
+       }
       ;
 
 statement:
      labeled_statement
-     { //printinfo("statement -> labeled_statement\n"); }
+     { //printinfo("statement -> labeled_statement\n"); 
+     }
      |compound_statement
      { //printinfo("statement -> compound_statement\n");
      $$=$1;
@@ -1550,21 +1638,26 @@ jump_statement:
 
 translation_unit:
         external_declaration
-        { //printinfo("translation_unit -> external_declaration\n"); }
+        { //printinfo("translation_unit -> external_declaration\n");
+         }
         |translation_unit external_declaration
-        {// printinfo("translation_unit -> external_declaration\n"); }
+        {// printinfo("translation_unit -> external_declaration\n"); 
+        }
         ;
 
 external_declaration:
         function_definition
-        { //printinfo("external_declaration -> function_definition\n"); }
+        { //printinfo("external_declaration -> function_definition\n"); 
+        }
         |declaration
-        {// printinfo("external_declaration -> declaration\n"); }
+        {// printinfo("external_declaration -> declaration\n");
+         }
         ;
 
 function_definition:
         declaration_specifiers declarator declaration_list CT compound_statement
-        { printinfo("function_definition -> declaration_specifiers declarator declaration_list_opt compound_statement\n"); }
+        { //printinfo("function_definition -> declaration_specifiers declarator declaration_list_opt compound_statement\n");
+         }
 
         |declaration_specifiers declarator CT compound_statement {
                 int zero = 0;   
@@ -1576,9 +1669,11 @@ function_definition:
 
 declaration_list:
         declaration
-        { //printinfo("declaration_list -> declaration\n"); }
+        { //printinfo("declaration_list -> declaration\n");
+         }
         |declaration_list declaration
-        { //printinfo("declaration_list -> declaration_list declaration\n"); }
+        { //printinfo("declaration_list -> declaration_list declaration\n"); 
+        }
         ;
 
 declaration_list_optional:
