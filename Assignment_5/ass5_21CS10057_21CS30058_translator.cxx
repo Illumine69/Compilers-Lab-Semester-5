@@ -1,3 +1,11 @@
+/*
+Name: Sanskar Mittal              Roll No:   21CS10057
+Name: Voddula Karthik Reddy       Roll No:   21CS30058
+Semester: 5th
+Assignment 5: Machine Independent Code Generator for tinyC
+File: translator cxx file
+*/
+
 #include "ass5_21CS10057_21CS30058_translator.h"
 
 //reference to global variables declared in header file 
