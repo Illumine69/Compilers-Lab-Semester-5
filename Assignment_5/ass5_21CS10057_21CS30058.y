@@ -108,8 +108,6 @@ using namespace std;
 
 %right THEN ELSE
 
-
-
 %type <intval> argument_expression_list
 
 %type <unaryOperator> unary_operator
@@ -1282,17 +1280,11 @@ pointer:
         }
         |'*' {
                 $$ = new symtype("PTR");
-                int zero = 0;   
-                int one = 1;
         }
         |'*' type_qualifier_list {//later
-        int zero = 0;   
-        int one = 1;
         }
         |'*' pointer {
                 $$ = new symtype("PTR", $2);
-                int zero = 0;   
-                int one = 1;
         }
         ;
      
