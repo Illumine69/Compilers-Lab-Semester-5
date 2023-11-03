@@ -1,0 +1,6 @@
+*.o
+*.out
+lex.yy.c
+y.tab.c
+*.txt
+*.zip
