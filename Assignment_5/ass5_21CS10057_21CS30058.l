@@ -29,7 +29,7 @@ IDENTIFIER                      {NONDIGIT}({NONDIGIT}|{DIGIT})*
 NONZERO_DIGIT                   [1-9]
 INTEGER_CONSTANT                {NONZERO_DIGIT}{DIGIT}*|"0"
 
-/*floating co+-tants*/
+/*floating constants*/
 SIGN                            [+-]
 DIGIT_SEQUENCE                  {DIGIT}+
 EXPONENT_PART                   ("e"{SIGN}?{DIGIT_SEQUENCE})|(E{SIGN}?{DIGIT_SEQUENCE})
