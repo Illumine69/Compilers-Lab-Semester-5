@@ -6,7 +6,7 @@ run: a.out
 	./a.out < Test_Inputs/ass6_21CS10057_21CS30058_test5.c > 3_Address_Test_Outputs/ass6_21CS10057_21CS30058_quads5.out
 
 a.out : y.tab.c lex.yy.o ass6_21CS10057_21CS30058_translator.h y.tab.o libass6_21CS10057_21CS30058.a
-	g++ -std=c++17 -L. -w ass6_21CS10057_21CS30058_translator.cxx y.tab.o lex.yy.o -ll -lass6_21CS10057_21CS30058
+	g++ -std=c++17 -w -L. ass6_21CS10057_21CS30058_translator.cxx y.tab.o lex.yy.o -ll -lass6_21CS10057_21CS30058
 
 libass6_21CS10057_21CS30058.a: ass6_21CS10057_21CS30058.o
 	ar -rcs libass6_21CS10057_21CS30058.a ass6_21CS10057_21CS30058.o
@@ -25,4 +25,4 @@ lex.yy.c : y.tab.h ass6_21CS10057_21CS30058.l
 y.tab.c y.tab.h: ass6_21CS10057_21CS30058.y
 	bison -dy ass6_21CS10057_21CS30058.y
 clean:
-	rm *tab* *yy* *.out *.output
+	rm *tab* *yy* *.out *.output *.a *.o

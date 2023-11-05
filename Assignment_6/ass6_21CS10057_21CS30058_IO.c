@@ -1,3 +1,11 @@
+/*
+Name: Sanskar Mittal              Roll No:   21CS10057
+Name: Voddula Karthik Reddy       Roll No:   21CS30058
+Semester: 5th
+Assignment 6: Target Code Generator for tinyC
+File: myl.c file
+*/
+
 #include "myl.h"
 int printStr(char * a)
 {
