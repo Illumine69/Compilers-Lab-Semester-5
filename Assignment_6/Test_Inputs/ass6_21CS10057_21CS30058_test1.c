@@ -10,6 +10,10 @@ int main() {
     int sum = num1 + num2;
     printf("Sum: %d\n", sum);
 
+    int b[100][20];
+
+    b[1][1]=4;
+
     int a = 5;
     while (a < 10) {
         a++;

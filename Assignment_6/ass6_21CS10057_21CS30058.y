@@ -229,12 +229,39 @@ postfix_expression:
           |postfix_expression '[' expression ']'
           { //printinfo("postfix_expression -> postfix_expression [ expression ]\n"); 
 
-                $$ = new array1 ();
-                $$->array1 = $1->loc;
-                int zero = 0;   
-                int one = 1;
-                $$->loc = $$->array1;
-                $$->type = $1->loc->type;
+                $$ = new array1();
+                
+                $$->array1 = $1->loc;   
+                                   // copy the base
+                $$->type = $1->type->ptr;                               // type = type of element
+                $$->loc = gentemp(new symtype("INTEGER"));              // store computed address
+                
+                // New address =(if only) already computed + $3 * new width
+                if ($1->cat=="ARR") {                                           // if already computed
+                        sym* t = gentemp(new symtype("INTEGER"));
+                        stringstream STring;
+                    STring <<size_type($$->type);
+                    string TempString = STring.str();
+                        int two = 2;    
+                        int three = 3;
+                    char* Int_STring = (char*) TempString.c_str();
+                        string str = string(Int_STring);                                
+                        emit ("MULT", t->name, $3->loc->name, str);
+                        emit ("ADD", $$->loc->name, $1->loc->name, t->name);
+                }
+                else {
+                        stringstream STring;
+                    STring <<size_type($$->type);
+                    string TempString = STring.str();
+                        int four = 4;   
+                        int five = 5;
+                    char* Int_STring1 = (char*) TempString.c_str();
+                        string str1 = string(Int_STring1);              
+                        emit("MULT", $$->loc->name, $3->loc->name, str1);
+                }
+
+                // Mark that it contains array1 address and first time computation is done
+                $$->cat = "ARR";
 
           }
 
@@ -250,8 +277,7 @@ postfix_expression:
                 stringstream STring;
             STring <<$3;
             string TempString = STring.str();
-                int zero = 0;   
-                int one = 1;
+              
             char* Int_STring = (char*) TempString.c_str();
                 string str = string(Int_STring);                
                 emit("CALL", $$->array1->name, $1->array1->name, str);               
@@ -268,8 +294,7 @@ postfix_expression:
              { //printinfo("postfix_expression -> postfix_expression ++\n"); 
 
                 $$ = new array1();
-                int zero = 0;   
-                int one = 1;
+               
                 // copy $1 to $$
                 $$->array1 = gentemp($1->array1->type);
                 emit ("EQUAL", $$->array1->name, $1->array1->name);
@@ -286,8 +311,7 @@ postfix_expression:
                 // copy $1 to $$
                 $$->array1 = gentemp($1->array1->type);
                 emit ("EQUAL", $$->array1->name, $1->array1->name);
-                int zero = 0;   
-                int one = 1;
+           
                 // Decrement $1
                 emit ("SUB", $1->array1->name, $1->array1->name, "1");
 
@@ -296,8 +320,8 @@ postfix_expression:
             { //printinfo("postfix_expression -> ( type_name ) { initializer_list }\n");
 
                 $$ = new array1();
-                int zero = 0;   
-                int one = 1;
+                int fsf = 8;   
+
                 $$->array1 = gentemp(new symtype("INTEGER"));
                 $$->loc = gentemp(new symtype("INTEGER"));
 
@@ -306,8 +330,8 @@ postfix_expression:
              { //printinfo("postfix_expression -> ( type_name ) { initializer_list , }\n"); 
 
              $$ = new array1();
-                int zero = 0;   
-                int one = 1;
+                int sff=123;  
+                
                 $$->array1 = gentemp(new symtype("INTEGER"));
                 $$->loc = gentemp(new symtype("INTEGER"));
 
