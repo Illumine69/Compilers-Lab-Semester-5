@@ -9,11 +9,10 @@ a.out : y.tab.c lex.yy.o ass6_21CS10057_21CS30058_translator.h y.tab.o libass6_2
 	g++ -std=c++17 -L. -w ass6_21CS10057_21CS30058_translator.cxx y.tab.o lex.yy.o -ll -lass6_21CS10057_21CS30058
 
 libass6_21CS10057_21CS30058.a: ass6_21CS10057_21CS30058.o
-	ar -rcs ass6_21CS10057_21CS30058.a ass6_21CS10057_21CS30058.o
+	ar -rcs libass6_21CS10057_21CS30058.a ass6_21CS10057_21CS30058.o
 
-ass6_21CS10057_21CS30058.o:ass6_21CS10057_21CS30058_IO.c myl.h
+ass6_21CS10057_21CS30058.o: ass6_21CS10057_21CS30058_IO.c myl.h
 	gcc -Wall -c -o ass6_21CS10057_21CS30058.o ass6_21CS10057_21CS30058_IO.c
-
 lex.yy.o:lex.yy.c
 	g++ -std=c++17 -c lex.yy.c 
 

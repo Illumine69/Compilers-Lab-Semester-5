@@ -11,13 +11,18 @@ int main() {
     int sum = num1 + num2;
     printf("Sum: %d\n", sum);
 
-    int b[100]={1,2,3,4};
-
-    
+    int b[100];
+    b[0] = 1;
 
     int a = 5;
     while (a < 10) {
         a++;
+    }
+
+    if(1) {
+        if(1){
+            a++;
+        }
     }
 
     int i;
