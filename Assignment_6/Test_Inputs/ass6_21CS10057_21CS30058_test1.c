@@ -1,4 +1,5 @@
 //testing various declarations , while loop and for loop
+
 void foo() {
     int a = 5;
     int b = 4;
@@ -10,9 +11,9 @@ int main() {
     int sum = num1 + num2;
     printf("Sum: %d\n", sum);
 
-    int b[100][20];
+    int b[100]={1,2,3,4};
 
-    b[1][1]=4;
+    
 
     int a = 5;
     while (a < 10) {

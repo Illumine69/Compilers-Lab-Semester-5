@@ -162,27 +162,23 @@ using namespace std;
 
 constant
         :INTEGER_NO {
-        stringstream STring;
-    STring << $1;
-        int zero = 0;
-    string TempString = STring.str();
-    char* Int_STring = (char*) TempString.c_str();
-        string str = string(Int_STring);
-        int one = 1;
+  
+        string str = to_string($1);
+        int temp = 1;
         $$ = gentemp(new symtype("INTEGER"), str);
         emit("EQUAL", $$->name, $1);
         }
         |FLOAT_NO {
-        int zero = 0;
-        int one = 1;
+       
+        int temp = 1;
         $$ = gentemp(new symtype("DOUBLE"), string($1));
         emit("EQUAL", $$->name, string($1));
         }
         |ENUMERATION_CONSTANT  {//later
         }
         |CHARACTER {
-        int zero = 0;   
-        int one = 1;
+       
+        int temp = 1;
         $$ = gentemp(new symtype("CHAR"),$1);
         emit("EQUAL", $$->name, string($1));
         }
@@ -193,8 +189,8 @@ primary_expression:
            IDENTIFIER {
         $$ = new expr();
         $$->loc = $1;
-        int zero = 0;   
-        int one = 1;
+        
+        int temp = 1;
         $$->type = "NONBOOL";
         }
         | constant {
@@ -212,8 +208,8 @@ primary_expression:
         $$->loc->type->ptr = new symtype("CHAR");
         }
         | '(' expression ')' {
-        int zero = 0;   
-        int one = 1;
+       
+        int temp = 1;
         $$ = $2;
         }
 
@@ -243,7 +239,7 @@ postfix_expression:
                     STring <<size_type($$->type);
                     string TempString = STring.str();
                         int two = 2;    
-                        int three = 3;
+                      
                     char* Int_STring = (char*) TempString.c_str();
                         string str = string(Int_STring);                                
                         emit ("MULT", t->name, $3->loc->name, str);
@@ -604,8 +600,8 @@ shift_expression:
 
         if ($3->loc->type->type == "INTEGER") {
                         $$ = new expr();
-                        int zero = 0;   
-                        int one = 1;
+                       
+                        int temp= 1;
                         $$->loc = gentemp (new symtype("INTEGER"));
                         emit ("RIGHTOP", $$->loc->name, $1->loc->name, $3->loc->name);
                 }
@@ -625,8 +621,8 @@ relational_expression:
            if (typecheck ($1->loc, $3->loc) ) {
                         $$ = new expr();
                         $$->type = "BOOL";
-                        int zero = 0;   
-                        int one = 1;
+                          
+                        int temp = 1;
                         $$->truelist = makelist (nextinstr());
                         $$->falselist = makelist (nextinstr()+1);
                         emit("LT", "", $1->loc->name, $3->loc->name);
@@ -656,8 +652,8 @@ relational_expression:
                 if (typecheck ($1->loc, $3->loc) ) {
                         $$ = new expr();
                         $$->type = "BOOL";
-                        int zero = 0;   
-                        int one = 1;
+                           
+                        int temp = 1;
                         $$->truelist = makelist (nextinstr());
                         $$->falselist = makelist (nextinstr()+1);
                         emit("LE", "", $1->loc->name, $3->loc->name);
@@ -671,8 +667,8 @@ relational_expression:
            if (typecheck ($1->loc, $3->loc) ) {
                         $$ = new expr();
                         $$->type = "BOOL";
-                        int zero = 0;   
-                        int one = 1;
+                     
+                        int temp = 1;
                         $$->truelist = makelist (nextinstr());
                         $$->falselist = makelist (nextinstr()+1);
                         emit("GE", "", $1->loc->name, $3->loc->name);
@@ -699,8 +695,8 @@ equality_expression:
 
                         $$ = new expr();
                         $$->type = "BOOL";
-                        int zero = 0;   
-                        int one = 1;
+                         
+                        int temp = 1;
                         $$->truelist = makelist (nextinstr());
                         $$->falselist = makelist (nextinstr()+1);
                         emit("EQOP", "", $1->loc->name, $3->loc->name);
@@ -719,8 +715,8 @@ equality_expression:
 
                         $$ = new expr();
                         $$->type = "BOOL";
-                        int zero = 0;   
-                        int one = 1;
+                         
+                        int temp = 1;
                         $$->truelist = makelist (nextinstr());
                         $$->falselist = makelist (nextinstr()+1);
                         emit("NEOP", "", $1->loc->name, $3->loc->name);
@@ -745,8 +741,8 @@ AND_expression:
                         // If any is bool get its value
                         convertBool2Int ($1);
                         convertBool2Int ($3);
-                        int zero = 0;   
-                        int one = 1;
+                         
+                        int temp = 1;
                         $$ = new expr();
                         $$->type = "NONBOOL";
 
@@ -771,8 +767,8 @@ exclusive_OR_expression:
                         // If any is bool get its value
                         convertBool2Int ($1);
                         convertBool2Int ($3);
-                        int zero = 0;   
-                        int one = 1;
+                        
+                        int temp = 1;
                         $$ = new expr();
                         $$->type = "NONBOOL";
 
@@ -798,8 +794,8 @@ inclusive_OR_expression:
                         // If any is bool get its value
                         convertBool2Int ($1);
                         convertBool2Int ($3);
-                        int zero = 0;   
-                        int one = 1;
+  
+                        int temp = 1;
                         $$ = new expr();
                         $$->type = "NONBOOL";
 
@@ -825,8 +821,8 @@ logical_AND_expression:
                 // convert $1 to bool and backpatch using N
                 backpatch($2->nextlist, nextinstr());
                 convertInt2Bool($1);
-                int zero = 0;   
-                int one = 1;
+                   
+                int temp = 1;
                 $$ = new expr();
                 $$->type = "BOOL";
 
@@ -850,8 +846,8 @@ logical_OR_expression:
                 // convert $1 to bool and backpatch using N
                 backpatch($2->nextlist, nextinstr());
                 convertInt2Bool($1);
-                int zero = 0;   
-                int one = 1;
+  
+                int temp = 1;
                 $$ = new expr();
                 $$->type = "BOOL";
 
@@ -914,8 +910,8 @@ assignment_expression:
             { //printinfo("assignment_expression -> unary_expression assignment_operator assignment_expression\n"); 
             if($1->cat=="ARR") {
                         $3->loc = conv($3->loc, $1->type->type);
-                        int zero = 0;   
-                        int one = 1;
+   
+                        int temp = 1;
                         emit("ARRL", $1->array1->name, $1->loc->name, $3->loc->name);   
                         }
                 else if($1->cat=="PTR") {
@@ -1180,8 +1176,8 @@ direct_declarator:
            { //printinfo("direct_declarator -> identifier\n"); 
            $$ = $1->update(new symtype(Type));
                 currSymbol = $$;
-                int zero = 0;   
-                int one = 1;
+  
+                int temp = 1;
 
            }
            |'(' declarator ')'
@@ -1206,14 +1202,14 @@ direct_declarator:
                 if (prev==NULL) {
                         int temp = atoi($3->loc->initial_value.c_str());
                         symtype* s = new symtype("ARR", $1->type, temp);
-                        int zero = 0;   
-                        int one = 1;
+   
+                      
                         $$ = $1->update(s);
                 }
                 else {
                         prev->ptr =  new symtype("ARR", t, atoi($3->loc->initial_value.c_str()));
-                        int zero = 0;   
-                        int one = 1;
+  
+                        int temp = 1;
                         $$ = $1->update ($1->type);
                 }
         }
@@ -1234,8 +1230,8 @@ direct_declarator:
                 }
                 else {
                         prev->ptr =  new symtype("ARR", t, 0);
-                        int zero = 0;   
-                int one = 1;
+   
+                int tmep = 1;
                         $$ = $1->update ($1->type);
                 }
         }
@@ -1265,13 +1261,13 @@ direct_declarator:
                 currSymbol = $$;
         }
         | direct_declarator '(' identifier_list ')' {//later
-        int zero = 0;   
+   
         int one = 1;
         }
         | direct_declarator '(' CT ')' {
                 currTable->name = $1->name;
-                int zero = 0;   
-                int one = 1;    
+   
+                int temp = 1;    
                 if ($1->type->type !="VOID") {  
                         sym *s = currTable->lookup("return");
                         int three = 0;  
@@ -1561,8 +1557,8 @@ iteration_statement:
            { //printinfo("iteration_statement -> while ( expression ) statement\n");
            $$ = new statement();
                 convertInt2Bool($4);
-                int zero = 0;   
-                int one = 1;
+  
+                int temp = 1;
                 // M1 to go back to boolean again
                 // M2 to go to statement if the boolean is true
                 backpatch($7->nextlist, $2);
@@ -1652,14 +1648,14 @@ jump_statement:
          }
         |RETURN expression ';' {
                 $$ = new statement();
-                int zero = 0;   
-                int one = 1;
+   
+                int temp = 1;
                 emit("RETURN",$2->loc->name);
         }
         |RETURN ';' {
                 $$ = new statement();
-                int zero = 0;   
-                int one = 1;
+  
+                int temp = 1;
                 emit("RETURN","");
         }
         ;
@@ -1688,8 +1684,8 @@ function_definition:
          }
 
         |declaration_specifiers declarator CT compound_statement {
-                int zero = 0;   
-                int one = 1;
+  
+                int temp = 1;
                 currTable->parent = globalTable;
                 changeTable (globalTable);
         }
