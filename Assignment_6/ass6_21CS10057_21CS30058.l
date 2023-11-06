@@ -1,15 +1,24 @@
-/* C Declarations and Definitions */
+/*
+Name: Sanskar Mittal              Roll No:   21CS10057
+Name: Voddula Karthik Reddy       Roll No:   21CS30058
+Semester: 5th
+Assignment 6: Target Code Generator for tinyC
+File: lex file
+*/
+
+
 %{  
     #include <stdio.h>
+    #include <string.h>
+
     #include "ass6_21CS10057_21CS30058_translator.h"
     #include "ass6_21CS10057_21CS30058.tab.h"
+    
+     
 %}
 
 %option yylineno
 %option noyywrap
-
-%x single_line
-%x multi_line
 
 /* Regular Expression Definitions */
 
@@ -36,6 +45,9 @@ s_char_sequence                 {s_char}+
 string_literal                  \"({s_char_sequence}?)\"
 
 ws                              [ \t\n]
+
+%x single_line
+%x multi_line
 
 /* Translation_rules */
 %%
@@ -93,9 +105,9 @@ ws                              [ \t\n]
 {identifier}                    { yylval.str = new string(yytext); return IDENTIFIER; }
 {integer_constant}              { yylval.intval = atoi(yytext); return INTEGER_CONSTANT; }
 {floating_constant}             { yylval.floatval = atof(yytext); return FLOATING_CONSTANT; }
-{char_constant}                 { yylval.charval = yytext[1]; return CHAR_CONSTANT; }
+{char_constant}            { yylval.charval = yytext[1]; return CHAR_CONSTANT; }
 {string_literal}                { yylval.str = new string(yytext); return STRING_LITERAL; }
-{ws}                            {}
+{ws}                         {}
 
 
 "["                             { return LEFT_SQUARE; }
