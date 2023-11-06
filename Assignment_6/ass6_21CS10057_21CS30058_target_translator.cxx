@@ -7,7 +7,7 @@
 * File for Target Code Generation
 */
 
-#include "ass6_20CS10085_20CS30065_translator.h"
+#include "ass6_21CS10057_21CS30058_translator.h"
 #include <fstream>
 #include <sstream>
 #include <stack>
@@ -555,7 +555,7 @@ int main(int argc, char* argv[]) {
     ST = &ST_global;
     yyparse();
 
-    assembly_file = "ass6_20CS10085_20CS30065_" + string(argv[argc - 1]) + ".s";
+    assembly_file = "ass6_21CS10057_21CS30058_" + string(argv[argc - 1]) + ".s";
     ofstream sfile;
     sfile.open(assembly_file);
 

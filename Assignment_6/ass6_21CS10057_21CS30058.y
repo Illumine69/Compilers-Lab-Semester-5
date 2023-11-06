@@ -1,6 +1,6 @@
 %{
     #include <iostream>
-    #include "ass6_20CS10085_20CS30065_translator.h"
+    #include "ass6_21CS10057_21CS30058_translator.h"
     using namespace std;
 
     //from lexer
