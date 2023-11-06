@@ -1,855 +1,573 @@
-/*
-Name: Sanskar Mittal              Roll No:   21CS10057
-Name: Voddula Karthik Reddy       Roll No:   21CS30058
-Semester: 5th
-Assignment 6: Target Code Generator for tinyC
-File: target translator cxx
+/**
+* Pranav Mehrotra, 20CS10085
+* Saransh Sharma, 20CS30065
+* Compilers Laboratory
+* Assignment 6
+*
+* File for Target Code Generation
 */
 
-#include "ass6_21CS10057_21CS30058_translator.h"
-#include "y.tab.h"
+#include "ass6_20CS10085_20CS30065_translator.h"
+#include <fstream>
+#include <sstream>
+#include <stack>
+using namespace std;
 
-extern quad_arr glob_quad;
-extern int next_instr;
-map<int,int> mp_set;
-stack<string> params_stack;
-stack<int> types_stack;
-stack<int> offset_stack;
-stack<int> ptrarr_stack;
-extern std::vector< string > vs;
-extern std::vector<string> cs;
-int add_off;
+// External variables
+extern quad_TAC_arr TAC_list;
+extern symbol_table* ST;
+extern symbol_table ST_global;
 
-void symtab::mark_labels()
-{
-	int count=1;
-	int i = 0;
+// Declare global variables
+string assembly_file;
+int label_num = 0;
+stack<pair<string, int>> params;
+map<int, string> labels;
+vector<string> f_strings;
+string function_name = "";
 
-	while( i < next_instr)
-	{
-		switch(glob_quad.arr[i].op)
-		{
-			case Q_GOTO:
-			case Q_IF_EQUAL:
-			case Q_IF_NOT_EQUAL:
-			case Q_IF_EXPRESSION:
-			case Q_IF_NOT_EXPRESSION:
-			case Q_IF_LESS:
-			case Q_IF_GREATER:
-			case Q_IF_LESS_OR_EQUAL:
-			case Q_IF_GREATER_OR_EQUAL:
 
-			if(glob_quad.arr[i].result!="-1")
-			{	
-				if(mp_set.find(atoi(glob_quad.arr[i].result.c_str()))==mp_set.end())
-				{
-					mp_set[atoi(glob_quad.arr[i].result.c_str())]=count;
-					count++;				
-				}
-			}
-		}
-		i++;
-	}
-} 
-
-void symtab::function_prologue(FILE *fp,int count)
-{
-	fprintf(fp,"\n\t.globl\t%s",name.c_str());
-	fprintf(fp,"\n\t.type\t%s, @function",name.c_str());
-	fprintf(fp,"\n%s:",name.c_str());
-	fprintf(fp,"\n.LFB%d:",count);
-	fprintf(fp,"\n\tpushq\t%%rbp");
-	fprintf(fp,"\n\tmovq\t%%rsp, %%rbp");
-	int t=-offset;
-	fprintf(fp,"\n\tsubq\t$%d, %%rsp",t);
-}
-
-void symtab::global_variables(FILE *fp)
-{
-	int i = 0;
-	while( i < symbol_tab.size())
-	{
-		
-		if(symbol_tab[i]->name[0]!='t' &&symbol_tab[i]->tp_n!=NULL&&symbol_tab[i]->var_type!="func")
-		{
-			if(symbol_tab[i]->tp_n->basetp==tp_int)
-			{
-				vs.push_back(symbol_tab[i]->name);
-				if(symbol_tab[i]->isInitialized==false)
-				{
-					fprintf(fp,"\n\t.comm\t%s,4,4",symbol_tab[i]->name.c_str());
-				}
-				else
-				{
-					fprintf(fp,"\n\t.globl\t%s",symbol_tab[i]->name.c_str());
-					fprintf(fp,"\n\t.data");
-					fprintf(fp,"\n\t.align 4");
-					fprintf(fp,"\n\t.type\t%s, @object",symbol_tab[i]->name.c_str());
-					fprintf(fp,"\n\t.size\t%s ,4",symbol_tab[i]->name.c_str());
-					fprintf(fp,"\n%s:",symbol_tab[i]->name.c_str());
-					fprintf(fp,"\n\t.long %d",symbol_tab[i]->i_val.int_val);
-				}
-		    }
-		    if(symbol_tab[i]->tp_n->basetp==tp_char)
-			{
-				cs.push_back(symbol_tab[i]->name);
-				if(symbol_tab[i]->isInitialized==false)
-				{
-					fprintf(fp,"\n\t.comm\t%s,1,1",symbol_tab[i]->name.c_str());
-				}
-				else
-				{
-					fprintf(fp,"\n\t.globl\t%s",symbol_tab[i]->name.c_str());
-					fprintf(fp,"\n\t.data");
-					fprintf(fp,"\n\t.type\t%s, @object",symbol_tab[i]->name.c_str());
-					fprintf(fp,"\n\t.size\t%s ,1",symbol_tab[i]->name.c_str());
-					fprintf(fp,"\n%s:",symbol_tab[i]->name.c_str());
-					fprintf(fp,"\n\t.byte %c",symbol_tab[i]->i_val.char_val);
-				}
-		    }
-		}
-		i++;
-	}
-	fprintf(fp,"\n\t.text");
-}
-
-void symtab::assign_offset()
-{
-	int curr_offset=0;
-	int param_offset=16;
-	no_params=0;
-	for(int i = (symbol_tab).size()-1; i>=0; i--)
-    {
-        if(symbol_tab[i]->ispresent==false)
-        	continue;
-        if(symbol_tab[i]->var_type=="param" && symbol_tab[i]->isdone==false)
-        {
-        	no_params++;
-        	if(symbol_tab[i]->tp_n && symbol_tab[i]->tp_n->basetp==tp_arr)
-        	{
-        		if(symbol_tab[i]->tp_n->size==-1)
-        		{
-        			symbol_tab[i]->isptrarr=true;
-        		}
-        		symbol_tab[i]->size=8;
-        	}
-        	symbol_tab[i]->offset=curr_offset-symbol_tab[i]->size;
-        	curr_offset=curr_offset-symbol_tab[i]->size;
-        	symbol_tab[i]->isdone=true;
+// Prints the global information to the assembly file
+void output_global_info(ofstream& sfile) {
+    for(vector<ST_entry*>::iterator it = ST_global.list_ST_entry.begin(); it != ST_global.list_ST_entry.end(); it++) {
+        ST_entry* sym = *it;
+        // If object type is 'CHAR'
+        if(sym->type.type == CHAR && sym->name[0] != 't') {
+            // If initialised
+            if(sym->initial_value != NULL) {
+                sfile << "\t.globl\t" << sym->name << endl;
+                sfile << "\t.data" << endl;
+                sfile << "\t.type\t" << sym->name << ", @object" << endl;
+                sfile << "\t.size\t" << sym->name << ", 1" << endl;
+                sfile << sym->name << ":" << endl;
+                sfile << "\t.byte\t" << sym->initial_value->c << endl;
+            }
+            else
+                sfile << "\t.comm\t" << sym->name << ",1,1" << endl;
         }
-        if(no_params==6)
-        	break;
-    }
-    for(int i = 0; i<(symbol_tab).size(); i++)
-    {
-        if(symbol_tab[i]->ispresent==false)
-        	continue;
-        if(symbol_tab[i]->var_type!="return"&&symbol_tab[i]->var_type!="param" && symbol_tab[i]->isdone==false)
-        {
-        	symbol_tab[i]->offset=curr_offset-symbol_tab[i]->size;
-        	curr_offset=curr_offset-symbol_tab[i]->size;
-        	symbol_tab[i]->isdone=true;
-        }
-        else if(symbol_tab[i]->var_type=="param" && symbol_tab[i]->isdone==false)
-        {
-        	if(symbol_tab[i]->tp_n && symbol_tab[i]->tp_n->basetp==tp_arr)
-        	{
-        		if(symbol_tab[i]->tp_n->size==-1)
-        		{
-        			symbol_tab[i]->isptrarr=true;
-        		}
-        		symbol_tab[i]->size=8;
-        	}
-        	symbol_tab[i]->isdone=true;
-        	no_params++;
-        	symbol_tab[i]->offset=param_offset;
-        	param_offset=param_offset+symbol_tab[i]->size;
+        // If object type is 'INT'
+        else if(sym->type.type == INT && sym->name[0] != 't') {
+            // If initialised
+            if(sym->initial_value != NULL) {
+                sfile << "\t.globl\t" << sym->name << endl;
+                sfile << "\t.data" << endl;
+                sfile << "\t.align\t4" << endl;
+                sfile << "\t.type\t" << sym->name << ", @object" << endl;
+                sfile << "\t.size\t" << sym->name << ", 4" << endl;
+                sfile << sym->name << ":" << endl;
+                sfile << "\t.long\t" << sym->initial_value->i << endl;
+            }
+            else
+                sfile << "\t.comm\t" << sym->name << ",4,4" << endl;
         }
     }
-    offset=curr_offset;
 }
 
-string symtab::assign_reg(int type_of,int no)
-{
-	string s="NULL";
-	if(type_of==tp_char){
-        switch(no){
-            case 0: s = "dil";
-                    break;
-            case 1: s = "sil";
-                    break;
-            case 2: s = "dl";
-                    break;
-            case 3: s = "cl";
-                    break;
-            case 4: s = "r8b";
-                    break;
-            case 5: s = "r9b";
-                    break;
-        }
-    }
-    else if(type_of == tp_int){
-        switch(no){
-            case 0: s = "edi";
-                    break;
-            case 1: s = "esi";
-                    break;
-            case 2: s = "edx";
-                    break;
-            case 3: s = "ecx";
-                    break;
-            case 4: s = "r8d";
-                    break;
-            case 5: s = "r9d";
-                    break;
-        }
-    }
-    else
-    {
-        switch(no){
-            case 0: s = "rdi";
-                    break;
-            case 1: s = "rsi";
-                    break;
-            case 2: s = "rdx";
-                    break;
-            case 3: s = "rcx";
-                    break;
-            case 4: s = "r8";
-                    break;
-            case 5: s = "r9";
-                    break;
-        }
-
-    }
-    return s;
-}
-
-int symtab::function_call(FILE *fp)
-{
-	
-	int c=0;
-	fprintf(fp,"\n\tpushq %%rbp");
-	int count=0;
-	while(count<6 && params_stack.size())
-	{
-		string p=params_stack.top();
-		int btp=types_stack.top();
-		int off=offset_stack.top();
-		int parr=ptrarr_stack.top();
-		params_stack.pop();
-		types_stack.pop();
-		offset_stack.pop();
-		ptrarr_stack.pop();
-		string temp_str=assign_reg(btp,count);
-		if(temp_str!="NULL")
-		{
-			if(btp==tp_int)
-			{	
-				fprintf(fp,"\n\tmovl\t%d(%%rbp) , %%%s",off,temp_str.c_str());
-			}
-			else if(btp==tp_char)
-			{
-				fprintf(fp,"\n\tmovb\t%d(%%rbp), %%%s",off,temp_str.c_str());
-			}
-			else if(btp==tp_arr && parr==1)
-			{
-				fprintf(fp,"\n\tmovq\t%d(%%rbp), %%%s",off,temp_str.c_str());
-			}
-			else if(btp==tp_arr)
-			{
-				fprintf(fp,"\n\tleaq\t%d(%%rbp), %%%s",off,temp_str.c_str());
-			}
-			else
-			{
-				fprintf(fp,"\n\tmovq\t%d(%%rbp), %%%s",off,temp_str.c_str());
-			}
-			count++;
-		}
-	}
-	while(params_stack.size())
-	{
-
-		string p=params_stack.top();
-		int btp=types_stack.top();
-		int off=offset_stack.top();
-		int parr=ptrarr_stack.top();
-		params_stack.pop();
-		types_stack.pop();
-		offset_stack.pop();
-		ptrarr_stack.pop();
-		if(btp==tp_int)
-		{	
-			fprintf(fp,"\n\tsubq $4, %%rsp");
-			fprintf(fp,"\n\tmovl\t%d(%%rbp), %%eax",off);
-			fprintf(fp,"\n\tmovl\t%%eax, (%%rsp)");
-			c+=4;
-		}
-		else if(btp==tp_arr && parr==1)
-		{
-			fprintf(fp,"\n\tsubq $8, %%rsp");
-			fprintf(fp,"\n\tmovq\t%d(%%rbp), %%rax",off);
-			fprintf(fp,"\n\tmovq\t%%rax, (%%rsp)");
-			c+=8;
-		}
-		else if(btp==tp_arr)
-		{
-			fprintf(fp,"\n\tsubq $8, %%rsp");
-			fprintf(fp,"\n\tleaq\t%d(%%rbp), %%rax",off);
-			fprintf(fp,"\n\tmovq\t%%rax, (%%rsp)");
-			c+=8;
-		}
-		else if(btp==tp_char)
-		{
-			fprintf(fp,"\n\tsubq $4, %%rsp");
-			fprintf(fp,"\n\tmovsbl\t%d(%%rbp), %%eax",off);
-			fprintf(fp,"\n\tmovl\t%%eax, (%%rsp)");
-			c+=4;
-		}
-		else
-		{
-			fprintf(fp,"\n\tsubq $8, %%rsp");
-			fprintf(fp,"\n\tmovq\t%d(%%rbp), %%rax",off);
-			fprintf(fp,"\n\tmovq\t%%rax, (%%rsp)");
-			c+=8;
-		}
-	}
-	return c;
-}
-
-void symtab::function_restore(FILE *fp)
-{
-	int count=0;
-	string regname;
-	for(int i=symbol_tab.size()-1;i>=0;i--)
-	{
-	    if(symbol_tab[i]->ispresent==false)
-	    	continue;
-	    if(symbol_tab[i]->var_type=="param" && symbol_tab[i]->offset<0)
-	    {
-		    if(symbol_tab[i]->tp_n->basetp == tp_char){
-	            regname = assign_reg(tp_char,count);
-	            fprintf(fp,"\n\tmovb\t%%%s, %d(%%rbp)",regname.c_str(),symbol_tab[i]->offset);
-	        }
-	        else if(symbol_tab[i]->tp_n->basetp == tp_int){
-	            regname = assign_reg(tp_int,count);
-	            fprintf(fp,"\n\tmovl\t%%%s, %d(%%rbp)",regname.c_str(),symbol_tab[i]->offset);
-	        }
-	        else {
-	            regname = assign_reg(10,count);
-	            fprintf(fp,"\n\tmovq\t%%%s, %d(%%rbp)",regname.c_str(),symbol_tab[i]->offset);
-	        }
-	    	count++;
-	    }
-	    if(count==6)
-	    	break;
+// Function to declare the strings in the assembly file 
+void output_strings(ofstream& sfile) {
+    // Declare the strings
+    sfile << ".section\t.rodata" << endl;
+    int i = 0;
+    for(vector<string>::iterator it = f_strings.begin(); it != f_strings.end(); it++) {
+        sfile << ".LC" << i++ << ":" << endl;       // String label
+        sfile << "\t.string " << *it << endl;       // String value
     }
 }
 
-void symtab::gen_internal_code(FILE *fp,int ret_count)
-{
-	int i;				
-	for(i = start_quad; i <=end_quad; i++)
-	{
-		opcode &opx =glob_quad.arr[i].op;
-		string &arg1x =glob_quad.arr[i].arg1;
-		string &arg2x =glob_quad.arr[i].arg2;
-		string &resx =glob_quad.arr[i].result;
-		int offr,off1,off2;
-		int flag1=1;
-		int flag2=1;
-		int flag3=1;
-		int j;
-		fprintf(fp,"\n# %d:",i);
-		//printf("dsda %s\n",resx.c_str());
-
-		if(search(resx))
-		{
-			offr = search(resx)->offset;
-			fprintf(fp,"res = %s ",search(resx)->name.c_str());
-		}
-		else if(glob_quad.arr[i].result!=""&& findg(glob_quad.arr[i].result))
-		{
-			flag3=0;
-		}
-		if(search(arg1x))
-		{
-		
-			off1 = search(arg1x)->offset;
-			fprintf(fp,"arg1 = %s ",search(arg1x)->name.c_str());
-		}
-		else if(glob_quad.arr[i].arg1!="" && findg(glob_quad.arr[i].arg1))
-		{
-			
-				flag1=0;
-				
-		}
-		if(search(arg2x))
-		{
-			off2 = search(arg2x)->offset;
-			fprintf(fp,"arg2 = %s ",search(arg2x)->name.c_str());
-		}
-		else if(glob_quad.arr[i].arg2!="" && findg(glob_quad.arr[i].arg2))
-		{
-			
-				flag2=0;
-				
-		}
-		if(flag1==0)
-		{
-			if(findg(arg1x)==2)
-					fprintf(fp,"\n\tmovzbl\t%s(%%rip), %%eax",arg1x.c_str());
-				else
-					fprintf(fp,"\n\tmovl\t%s(%%rip), %%eax",arg1x.c_str());
-		}
-		if(flag2==0)
-		{
-			if(findg(arg1x)==2)
-					fprintf(fp,"\n\tmovzbl\t%s(%%rip), %%edx",arg2x.c_str());
-				else
-					fprintf(fp,"\n\tmovl\t%s(%%rip), %%edx",arg2x.c_str());
-		}
-		if(mp_set.find(i)!=mp_set.end())
-		{
-			//Generate Label here
-			fprintf(fp,"\n.L%d:",mp_set[i]);
-		}
-		switch(opx)
-		{
-			case Q_PLUS:
-				if(search(resx)!=NULL && search(resx)->tp_n!=NULL&&search(resx)->tp_n->basetp == tp_char)
-				{
-					if(flag1!=0)
-					fprintf(fp,"\n\tmovzbl\t%d(%%rbp), %%eax",off1);
-					if(flag2!=0)
-					fprintf(fp,"\n\tmovzbl\t%d(%%rbp), %%edx",off2);
-					fprintf(fp,"\n\taddl\t%%edx, %%eax");
-					if(flag3!=0)
-					fprintf(fp,"\n\tmovb\t%%al, %d(%%rbp)",offr);
-					else
-						fprintf(fp,"\n\tmovb\t%%al, %s(%%rip)",resx.c_str());
-				}
-				else 
-				{
-					if(flag1!=0)
-					fprintf(fp,"\n\tmovl\t%d(%%rbp), %%eax",off1);
-					if(flag2!=0)
-					{if(arg2x[0]>='0' && arg2x[0]<='9')
-						fprintf(fp,"\n\tmovl\t$%s, %%edx",arg2x.c_str());
-					else
-						fprintf(fp,"\n\tmovl\t%d(%%rbp), %%edx",off2);
-					}
-					fprintf(fp,"\n\taddl\t%%edx, %%eax");
-					if(flag3!=0)
-					fprintf(fp,"\n\tmovl\t%%eax, %d(%%rbp)",offr);
-					else
-						fprintf(fp,"\n\tmovl\t%%eax, %s(%%rip)",resx.c_str());
-				}
-				break;
-			case Q_MINUS:
-				if(search(resx)!=NULL && search(resx)->tp_n!=NULL&&search(resx)->tp_n->basetp == tp_char)
-				{
-					if(flag1!=0)
-					fprintf(fp,"\n\tmovzbl\t%d(%%rbp), %%eax",off1);
-					if(flag2!=0)
-					fprintf(fp,"\n\tmovzbl\t%d(%%rbp), %%edx",off2);
-					fprintf(fp,"\n\tsubl\t%%edx, %%eax");
-					if(flag3!=0)
-					fprintf(fp,"\n\tmovb\t%%al, %d(%%rbp)",offr);
-					else
-						fprintf(fp,"\n\tmovb\t%%al, %s(%%rip)",resx.c_str());
-				}
-				else
-				{
-					if(flag1!=0)
-					fprintf(fp,"\n\tmovl\t%d(%%rbp), %%eax",off1);
-					// Direct Number access
-					if(flag2!=0)
-					{if(arg2x[0]>='0' && arg2x[0]<='9')
-						fprintf(fp,"\n\tmovl\t$%s, %%edx",arg2x.c_str());
-					else
-						fprintf(fp,"\n\tmovl\t%d(%%rbp), %%edx",off2);}
-					fprintf(fp,"\n\tsubl\t%%edx, %%eax");
-					if(flag3!=0)
-					fprintf(fp,"\n\tmovl\t%%eax, %d(%%rbp)",offr);
-					else
-						fprintf(fp,"\n\tmovl\t%%eax, %s(%%rip)",resx.c_str());
-			
-				}
-				break;
-			case Q_MULT:
-				if(search(resx)!=NULL && search(resx)->tp_n!=NULL&&search(resx)->tp_n->basetp == tp_char)
-				{
-					if(flag1!=0)
-					fprintf(fp,"\n\tmovzbl\t%d(%%rbp), %%eax",off1);
-					if(flag2!=0)
-					fprintf(fp,"\n\tmovzbl\t%d(%%rbp), %%edx",off2);
-					fprintf(fp,"\n\timull\t%%edx, %%eax");
-					if(flag3!=0)
-					fprintf(fp,"\n\tmovb\t%%al, %d(%%rbp)",offr);
-					else
-						fprintf(fp,"\n\tmovb\t%%al, %s(%%rip)",resx.c_str());
-				}
-				else
-				{
-				if(flag1!=0)
-				fprintf(fp,"\n\tmovl\t%d(%%rbp), %%eax",off1);
-				if(flag2!=0)
-				{if(arg2x[0]>='0' && arg2x[0]<='9')
-				{
-					fprintf(fp,"\n\tmovl\t$%s, %%ecx",arg2x.c_str());
-					fprintf(fp,"\n\timull\t%%ecx, %%eax");
-				}
-				else
-					fprintf(fp,"\n\timull\t%d(%%rbp), %%eax",off2);}
-				if(flag3!=0)
-				fprintf(fp,"\n\tmovl\t%%eax, %d(%%rbp)",offr);
-				else
-					fprintf(fp,"\n\tmovl\t%%eax, %s(%%rip)",resx.c_str());
-				}
-				break;
-			case Q_DIVIDE:
-				if(search(resx)!=NULL && search(resx)->tp_n!=NULL&&search(resx)->tp_n->basetp == tp_char)
-				{
-					if(flag1!=0)
-					fprintf(fp,"\n\tmovzbl\t%d(%%rbp), %%eax",off1);
-					fprintf(fp,"\n\tcltd");
-					if(flag2!=0)
-					fprintf(fp,"\n\tidivl\t%d(%%rbp), %%eax",off2);
-					else
-						fprintf(fp,"\n\tidivl\t%%edx, %%eax");
-					if(flag3!=0)
-					fprintf(fp,"\n\tmovb\t%%al, %d(%%rbp)",offr);
-					else
-						fprintf(fp,"\n\tmovb\t%%al, %s(%%rip)",resx.c_str());
-				}
-				else{
-				if(flag1!=0)
-				fprintf(fp,"\n\tmovl\t%d(%%rbp), %%eax",off1);
-				fprintf(fp,"\n\tcltd");
-				if(flag2!=0)
-				fprintf(fp,"\n\tidivl\t%d(%%rbp), %%eax",off2);
-				else
-					fprintf(fp,"\n\tidivl\t%%edx, %%eax");
-				if(flag3!=0)
-				fprintf(fp,"\n\tmovl\t%%eax, %d(%%rbp)",offr);
-				else
-					fprintf(fp,"\n\tmovl\t%%eax, %s(%%rip)",resx.c_str());
-				}	
-				break;
-			case Q_MODULO:
-				if(search(resx)!=NULL && search(resx)->tp_n!=NULL&&search(resx)->tp_n->basetp == tp_char)
-				{
-					fprintf(fp,"\n\tmovzbl\t%d(%%rbp), %%eax",off1);
-					fprintf(fp,"\n\tcltd");
-					fprintf(fp,"\n\tidivl\t%d(%%rbp), %%eax",off2);
-					fprintf(fp,"\n\tmovl\t%%edx, %%eax");
-					fprintf(fp,"\n\tmovb\t%%al, %d(%%rbp)",offr);
-				}
-				else{
-				fprintf(fp,"\n\tmovl\t%d(%%rbp), %%eax",off1);
-				fprintf(fp,"\n\tcltd");
-				fprintf(fp,"\n\tidivl\t%d(%%rbp), %%eax",off2);
-				fprintf(fp,"\n\tmovl\t%%edx, %d(%%rbp)",offr);
-				}
-				break;
-			case Q_UNARY_MINUS:
-				if(search(resx)!=NULL && search(resx)->tp_n!=NULL&&search(resx)->tp_n->basetp == tp_char)
-				{
-					fprintf(fp,"\n\tmovzbl\t%d(%%rbp), %%eax",off1);
-					fprintf(fp,"\n\tnegl\t%%eax");
-					fprintf(fp,"\n\tmovb\t%%al, %d(%%rbp)",offr);
-				}
-				else{
-				fprintf(fp,"\n\tmovl\t%d(%%rbp), %%eax",off1);
-				fprintf(fp,"\n\tnegl\t%%eax");
-				fprintf(fp,"\n\tmovl\t%%eax, %d(%%rbp)",offr);
-				}
-				break;
-			case Q_ASSIGN:
-				//Check if the second argument is a constant
-				if(arg1x[0]>='0' && arg1x[0]<='9')	//first character is number
-				{
-					if(flag1!=0)
-					fprintf(fp,"\n\tmovl\t$%s, %d(%%rbp)",arg1x.c_str(),offr);
-				}
-				else if(arg1x[0] == '\'')
-				{
-					//Character
-					fprintf(fp,"\n\tmovb\t$%d, %d(%%rbp)",(int)arg1x[1],offr);
-				}
-				else if(flag1 && search(resx)!=NULL && search(resx)->tp_n!=NULL&&search(resx)->tp_n->basetp == tp_char)
-				{
-					fprintf(fp,"\n\tmovzbl\t%d(%%rbp), %%eax",off1);
-					fprintf(fp,"\n\tmovb\t%%al, %d(%%rbp)",offr);
-				}
-				else if(flag1&&search(resx)!=NULL && search(resx)->tp_n!=NULL&&search(resx)->tp_n->basetp == tp_int)
-				{
-					if(flag1!=0)
-					fprintf(fp,"\n\tmovl\t%d(%%rbp), %%eax",off1);
-					fprintf(fp,"\n\tmovl\t%%eax, %d(%%rbp)",offr);
-				}
-				else if(search(resx)!=NULL && search(resx)->tp_n!=NULL)
-				{
-					fprintf(fp,"\n\tmovq\t%d(%%rbp), %%rax",off1);
-					fprintf(fp,"\n\tmovq\t%%rax, %d(%%rbp)",offr);
-				}
-				else
-				{
-					if(flag3!=0)
-					{fprintf(fp,"\n\tmovl\t%d(%%rbp), %%eax",off1);
-					fprintf(fp,"\n\tmovl\t%%eax, %d(%%rbp)",offr);}
-					else
-					{
-						fprintf(fp,"\n\tmovl\t%%eax, %s(%%rip)",resx.c_str());
-					}
-				}
-				break;
-			case Q_PARAM:
-				if(resx[0] == '_')
-				{
-					//string
-					char* temp = (char*)resx.c_str();
-					fprintf(fp,"\n\tmovq\t$.STR%d,\t%%rdi",atoi(temp+1));
-				}
-				else
-				{
-					params_stack.push(resx);
-					//printf("resx--> %s\n",resx.c_str());
-					types_stack.push(search(resx)->tp_n->basetp);
-					offset_stack.push(offr);
-					if(search(resx)->isptrarr==true)
-					{
-						ptrarr_stack.push(1);
-					}
-					else
-					{
-						ptrarr_stack.push(0);
-					}
-				}
-				break;
-			case Q_GOTO:
-				if(resx!="-1"&& atoi(resx.c_str())<=end_quad)
-					fprintf(fp,"\n\tjmp .L%d",mp_set[atoi(resx.c_str())]);
-				else 
-					fprintf(fp,"\n\tjmp\t.LRT%d",ret_count);
-				break;
-			case Q_CALL:
-				add_off=function_call(fp);
-				fprintf(fp,"\n\tcall\t%s",arg1x.c_str());
-				if(resx=="")
-				{
-
-				}
-				else if(search(resx)!=NULL && search(resx)->tp_n!=NULL&&search(resx)->tp_n->basetp == tp_int)
-				{
-					fprintf(fp,"\n\tmovl\t%%eax, %d(%%rbp)",offr);
-				}
-				else if(search(resx)!=NULL && search(resx)->tp_n!=NULL&&search(resx)->tp_n->basetp == tp_char)
-				{
-					fprintf(fp,"\n\tmovb\t%%al, %d(%%rbp)",offr);
-				}
-				else if(search(resx)!=NULL && search(resx)->tp_n!=NULL)
-				{
-					fprintf(fp,"\n\tmovq\t%%rax, %d(%%rbp)",offr);	
-				}
-				else
-				{	
-					fprintf(fp,"\n\tmovl\t%%eax, %d(%%rbp)",offr);
-				}
-				if(arg1x=="prints")
-				{
-					fprintf(fp,"\n\taddq $8 , %%rsp");
-				}
-				else 
-				{
-					fprintf(fp,"\n\taddq $%d , %%rsp",add_off);
-				}
-				break;
-			case Q_IF_LESS:
-				if(search(arg1x)!=NULL && search(arg1x)->tp_n!=NULL&&search(arg1x)->tp_n->basetp == tp_char)
-				{
-					fprintf(fp,"\n\tmovzbl\t%d(%%rbp), %%eax",off1);
-					fprintf(fp,"\n\tcmpb\t%d(%%rbp), %%al",off2);
-					fprintf(fp,"\n\tjl .L%d",mp_set[atoi(resx.c_str())]);
-				}
-				else
-				{
-					fprintf(fp,"\n\tmovl\t%d(%%rbp), %%eax",off1);
-					fprintf(fp,"\n\tmovl\t%d(%%rbp), %%edx",off2);
-					fprintf(fp,"\n\tcmpl\t%%edx, %%eax");
-					fprintf(fp,"\n\tjl .L%d",mp_set[atoi(resx.c_str())]);
-				}
-				break;
-			case Q_IF_LESS_OR_EQUAL:
-				if(search(arg1x)!=NULL && search(arg1x)->tp_n!=NULL&&search(arg1x)->tp_n->basetp == tp_char)
-				{
-					fprintf(fp,"\n\tmovzbl\t%d(%%rbp), %%eax",off1);
-					fprintf(fp,"\n\tcmpb\t%d(%%rbp), %%al",off2);
-					fprintf(fp,"\n\tjle .L%d",mp_set[atoi(resx.c_str())]);
-				}
-				else
-				{
-					fprintf(fp,"\n\tmovl\t%d(%%rbp), %%eax",off1);
-					fprintf(fp,"\n\tmovl\t%d(%%rbp), %%edx",off2);
-					fprintf(fp,"\n\tcmpl\t%%edx, %%eax");
-					fprintf(fp,"\n\tjle .L%d",mp_set[atoi(resx.c_str())]);
-				}
-				break;
-			case Q_IF_GREATER:
-				if(search(arg1x)!=NULL && search(arg1x)->tp_n!=NULL&&search(arg1x)->tp_n->basetp == tp_char)
-				{
-					fprintf(fp,"\n\tmovzbl\t%d(%%rbp), %%eax",off1);
-					fprintf(fp,"\n\tcmpb\t%d(%%rbp), %%al",off2);
-					fprintf(fp,"\n\tjg .L%d",mp_set[atoi(resx.c_str())]);
-				}
-				else
-				{
-					fprintf(fp,"\n\tmovl\t%d(%%rbp), %%eax",off1);
-					fprintf(fp,"\n\tmovl\t%d(%%rbp), %%edx",off2);
-					fprintf(fp,"\n\tcmpl\t%%edx, %%eax");
-					fprintf(fp,"\n\tjg .L%d",mp_set[atoi(resx.c_str())]);
-				}
-				break;
-			case Q_IF_GREATER_OR_EQUAL:
-				if(search(arg1x)!=NULL && search(arg1x)->tp_n!=NULL&&search(arg1x)->tp_n->basetp == tp_char)
-				{
-					fprintf(fp,"\n\tmovzbl\t%d(%%rbp), %%eax",off1);
-					fprintf(fp,"\n\tcmpb\t%d(%%rbp), %%al",off2);
-					fprintf(fp,"\n\tjge .L%d",mp_set[atoi(resx.c_str())]);
-				}
-				else
-				{
-					fprintf(fp,"\n\tmovl\t%d(%%rbp), %%eax",off1);
-					fprintf(fp,"\n\tmovl\t%d(%%rbp), %%edx",off2);
-					fprintf(fp,"\n\tcmpl\t%%edx, %%eax");
-					fprintf(fp,"\n\tjge .L%d",mp_set[atoi(resx.c_str())]);
-				}
-				break;
-			case Q_IF_EQUAL:
-				if(search(arg1x)!=NULL && search(arg1x)->tp_n!=NULL&&search(arg1x)->tp_n->basetp == tp_char)
-				{
-					fprintf(fp,"\n\tmovzbl\t%d(%%rbp), %%eax",off1);
-					fprintf(fp,"\n\tcmpb\t%d(%%rbp), %%al",off2);
-					fprintf(fp,"\n\tje .L%d",mp_set[atoi(resx.c_str())]);
-				}
-				else
-				{
-					fprintf(fp,"\n\tmovl\t%d(%%rbp), %%eax",off1);
-					fprintf(fp,"\n\tmovl\t%d(%%rbp), %%edx",off2);
-					fprintf(fp,"\n\tcmpl\t%%edx, %%eax");
-					fprintf(fp,"\n\tje .L%d",mp_set[atoi(resx.c_str())]);
-				}
-				break;
-			case Q_IF_NOT_EQUAL:
-				if(search(arg1x)!=NULL && search(arg1x)->tp_n!=NULL&&search(arg1x)->tp_n->basetp == tp_char)
-				{
-					fprintf(fp,"\n\tmovzbl\t%d(%%rbp), %%eax",off1);
-					fprintf(fp,"\n\tcmpb\t%d(%%rbp), %%al",off2);
-					fprintf(fp,"\n\tjne .L%d",mp_set[atoi(resx.c_str())]);
-				}
-				else
-				{
-					fprintf(fp,"\n\tmovl\t%d(%%rbp), %%eax",off1);
-					fprintf(fp,"\n\tmovl\t%d(%%rbp), %%edx",off2);
-					fprintf(fp,"\n\tcmpl\t%%edx, %%eax");
-					fprintf(fp,"\n\tjne .L%d",mp_set[atoi(resx.c_str())]);
-				}
-				break;
-			case Q_ADDR:
-				fprintf(fp,"\n\tleaq\t%d(%%rbp), %%rax",off1);
-				fprintf(fp,"\n\tmovq\t%%rax, %d(%%rbp)",offr);
-				break;
-			case Q_LDEREF:
-				fprintf(fp,"\n\tmovq\t%d(%%rbp), %%rax",offr);
-				fprintf(fp,"\n\tmovl\t%d(%%rbp), %%edx",off1);
-				fprintf(fp,"\n\tmovl\t%%edx, (%%rax)");
-				break;
-			case Q_RDEREF:
-				fprintf(fp,"\n\tmovq\t%d(%%rbp), %%rax",off1);
-				fprintf(fp,"\n\tmovl\t(%%rax), %%eax");
-				fprintf(fp,"\n\tmovl\t%%eax, %d(%%rbp)",offr);
-				break;
-			case Q_RINDEX:
-				// Get Address, subtract offset, get memory
-				if(search(arg1x)&&search(arg1x)->isptrarr==true)
-				{
-					fprintf(fp,"\n\tmovq\t%d(%%rbp), %%rdx",off1);
-					fprintf(fp,"\n\tmovslq\t%d(%%rbp), %%rax",off2);
-					fprintf(fp,"\n\taddq\t%%rax, %%rdx");
-				}
-				else
-				{
-					fprintf(fp,"\n\tleaq\t%d(%%rbp), %%rdx",off1);
-					fprintf(fp,"\n\tmovslq\t%d(%%rbp), %%rax",off2);
-					fprintf(fp,"\n\taddq\t%%rax, %%rdx");
-				}
-				if(search(resx)!=NULL && search(resx)->tp_n!=NULL&&search(resx)->tp_n->next&&search(resx)->tp_n->next->basetp == tp_char)
-				{
-					fprintf(fp,"\n\tmovzbl\t(%%rdx), %%eax");
-					fprintf(fp,"\n\tmovb\t%%al, %d(%%rbp)",offr);
-				}
-				else
-				{
-					fprintf(fp,"\n\tmovl\t(%%rdx), %%eax");
-					fprintf(fp,"\n\tmovl\t%%eax, %d(%%rbp)",offr);
-				}
-				break;
-			case Q_LINDEX:
-				// Get Address, subtract offset, get memory
-				if(search(resx)&&search(resx)->isptrarr==true)
-				{
-					fprintf(fp,"\n\tmovq\t%d(%%rbp), %%rdx",offr);
-					fprintf(fp,"\n\tmovslq\t%d(%%rbp), %%rax",off1);
-					fprintf(fp,"\n\taddq\t%%rax, %%rdx");
-				}
-				else
-				{
-					fprintf(fp,"\n\tleaq\t%d(%%rbp), %%rdx",offr);
-					fprintf(fp,"\n\tmovslq\t%d(%%rbp), %%rax",off1);
-					fprintf(fp,"\n\taddq\t%%rax, %%rdx");
-				}
-				if(search(resx)!=NULL && search(resx)->tp_n!=NULL&&search(resx)->tp_n->next && search(resx)->tp_n->next->basetp == tp_char)
-				{
-					fprintf(fp,"\n\tmovzbl\t%d(%%rbp), %%eax",off2);
-					fprintf(fp,"\n\tmovb\t%%al, (%%rdx)");
-				}
-				else
-				{
-					fprintf(fp,"\n\tmovl\t%d(%%rbp), %%eax",off2);
-					fprintf(fp,"\n\tmovl\t%%eax, (%%rdx)");
-				}
-				break;
-			case Q_RETURN:
-				if(resx!="")
-				{if(search(resx)!=NULL && search(resx)->tp_n!=NULL&&search(resx)->tp_n->basetp == tp_char)
-				{
-					fprintf(fp,"\n\tmovzbl\t%d(%%rbp), %%eax",offr);
-				}
-				else
-				{
-					fprintf(fp,"\n\tmovl\t%d(%%rbp), %%eax",offr);
-				}}
-				else
-				{
-					fprintf(fp,"\n\tmovl\t$0, %%eax");
-				}
-				fprintf(fp,"\n\tjmp\t.LRT%d",ret_count);
-				break;
-			default:
-			break;
-		}
-	}
+// Function to generate labels for different jump and branch statements of the code
+void generate_labels() {
+    int i = 0;
+    for(vector<quad>::iterator it = TAC_list.TAC_quad_list.begin(); it != TAC_list.TAC_quad_list.end(); it++) {
+        // If the quad is a goto statement
+        if(it->op == GOTO || (it->op >= GOTO_EQ && it->op <= IF_FALSE_GOTO)) {
+            // target label
+            int target = atoi((it->result.c_str()));
+            // If the label is not already present
+            if(!labels.count(target)) {
+                // Generate a new label
+                string labelName = ".L" + to_string(label_num++);
+                labels[target] = labelName;
+            }
+            // Assign the label to the quad
+            it->result = labels[target];
+        }
+    }
 }
 
-void symtab::function_epilogue(FILE *fp,int count,int ret_count)
-{
-	fprintf(fp,"\n.LRT%d:",ret_count);
-	fprintf(fp,"\n\taddq\t$%d, %%rsp",offset);
-	fprintf(fp,"\n\tmovq\t%%rbp, %%rsp");
-	fprintf(fp,"\n\tpopq\t%%rbp");
-	fprintf(fp,"\n\tret");
-	fprintf(fp,"\n.LFE%d:",count);
-	fprintf(fp,"\n\t.size\t%s, .-%s",name.c_str(),name.c_str());
+// Function to generate the prologue for the functions
+// It pushes the registers on the stack and allocates space for the local variables
+void generate_prologue(int memory_bind, ofstream& sfile) {
+    int width = 16;
+    // Declare a function name
+    sfile << endl << "\t.text" << endl;
+    sfile << "\t.globl\t" << function_name << endl;
+    sfile << "\t.type\t" << function_name << ", @function" << endl;
+    sfile << function_name << ":" << endl;
+    // Push the base pointer on the stack
+    sfile << "\tpushq\t" << "%rbp" << endl;
+    // Move the stack pointer to the base pointer
+    sfile << "\tmovq\t" << "%rsp, %rbp" << endl;
+    // Allocate space for the local variables
+    sfile << "\tsubq\t$" << (memory_bind / width + 1) * width << ", %rsp" << endl;
 }
 
+// Function to generate assembly code for a given three address quad
+void generate_assembly(quad q, ofstream& sfile) {
+    string strLabel = q.result;
+    // If the quad has a string label
+    bool hasStrLabel = (q.result[0] == '.' && q.result[1] == 'L' && q.result[2] == 'C');
+    string toPrint1 = "", toPrint2 = "", toPrintRes = "";
+    int off1 = 0, off2 = 0, offRes = 0;
+
+    // Search the symbol table for the quad's operands
+    ST_entry* location1 = ST->search_lexeme(q.arg1);
+    ST_entry* location2 = ST->search_lexeme(q.arg2);
+    ST_entry* location3 = ST->search_lexeme(q.result);
+    ST_entry* glb1 = ST_global.search_global_ST(q.arg1);
+    ST_entry* glb2 = ST_global.search_global_ST(q.arg2);
+    ST_entry* glb3 = ST_global.search_global_ST(q.result);
+
+    // If the local symbol table is not the same as global symbol table
+    if(ST != &ST_global) {
+        if(glb1 == NULL)
+            off1 = location1->offset;
+        if(glb2 == NULL)
+            off2 = location2->offset;
+        if(glb3 == NULL)
+            offRes = location3->offset;
+
+        if(q.arg1[0] < '0' || q.arg1[0] > '9') {
+            if(glb1 != NULL)
+                toPrint1 = q.arg1 + "(%rip)";
+            else
+                toPrint1 = to_string(off1) + "(%rbp)";
+        }
+        if(q.arg2[0] < '0' || q.arg2[0] > '9') {
+            if(glb2 != NULL)
+                toPrint2 = q.arg2 + "(%rip)";
+            else
+                toPrint2 = to_string(off2) + "(%rbp)";
+        }
+        if(q.result[0] < '0' || q.result[0] > '9') {
+            if(glb3 != NULL)
+                toPrintRes = q.result + "(%rip)";
+            else
+                toPrintRes = to_string(offRes) + "(%rbp)";
+        }
+    }
+    else {
+        toPrint1 = q.arg1;
+        toPrint2 = q.arg2;
+        toPrintRes = q.result;
+    }
+
+    // If the quad has a string label
+    if(hasStrLabel)
+        toPrintRes = strLabel;
+
+    // If quad operation is an assigment operation
+    if(q.op == ASSIGN) {
+        if(q.result[0] != 't' || location3->type.type == INT || location3->type.type == POINTER) {
+            if(location3->type.type != POINTER) {
+                if(q.arg1[0] < '0' || q.arg1[0] > '9')
+                {
+                    sfile << "\tmovl\t" << toPrint1 << ", %eax" << endl;
+                    sfile << "\tmovl\t%eax, " << toPrintRes << endl; 
+                }
+                else
+                    sfile << "\tmovl\t$" << q.arg1 << ", " << toPrintRes << endl;
+            }
+            else {
+                sfile << "\tmovq\t" << toPrint1 << ", %rax" << endl;
+                sfile << "\tmovq\t%rax, " << toPrintRes << endl; 
+            }
+        }
+        else {
+            int temp = q.arg1[0];
+            sfile << "\tmovb\t$" << temp << ", " << toPrintRes << endl;
+        }
+    }
+
+    // If quad operation is Unary Minus
+    else if(q.op == U_MINUS) {
+        sfile << "\tmovl\t" << toPrint1 << ", %eax" << endl;
+        sfile << "\tnegl\t%eax" << endl;
+        sfile << "\tmovl\t%eax, " << toPrintRes << endl;
+    }
+    // If quad operation is addition
+    else if(q.op == ADD) {
+        if(q.arg1[0] > '0' && q.arg1[0] <= '9')
+            sfile << "\tmovl\t$" << q.arg1 << ", %eax" << endl;
+        else
+            sfile << "\tmovl\t" << toPrint1 << ", %eax" << endl; 
+        if(q.arg2[0] > '0' && q.arg2[0] <= '9')
+            sfile << "\tmovl\t$" << q.arg2 << ", %edx" << endl;
+        else
+            sfile << "\tmovl\t" << toPrint2 << ", %edx" << endl; 
+        sfile << "\taddl\t%edx, %eax" << endl;
+        sfile << "\tmovl\t%eax, " << toPrintRes << endl;
+    }
+    // If quad operation is subtraction
+    else if(q.op == SUB) {
+        if(q.arg1[0] > '0' && q.arg1[0] <= '9')
+            sfile << "\tmovl\t$" << q.arg1 << ", %edx" << endl;
+        else
+            sfile << "\tmovl\t" << toPrint1 << ", %edx" << endl; 
+        if(q.arg2[0]>'0' && q.arg2[0]<='9')
+            sfile << "\tmovl\t$" << q.arg2 << ", %eax" << endl;
+        else
+            sfile << "\tmovl\t" << toPrint2 << ", %eax" << endl; 
+        sfile << "\tsubl\t%eax, %edx" << endl;
+        sfile << "\tmovl\t%edx, %eax" << endl;
+        sfile << "\tmovl\t%eax, " << toPrintRes << endl;
+    }
+    // If quad operation is multiplication
+    else if(q.op == MULT) {
+        if(q.arg1[0] > '0' && q.arg1[0] <= '9')
+            sfile << "\tmovl\t$" << q.arg1 << ", %eax" << endl;
+        else
+            sfile << "\tmovl\t" << toPrint1 << ", %eax" << endl; 
+        sfile << "\timull\t";
+        if(q.arg2[0] > '0' && q.arg2[0] <= '9')
+            sfile << "$" << q.arg2 << ", %eax" << endl;
+        else
+            sfile << toPrint2 << ", %eax" << endl;
+        sfile << "\tmovl\t%eax, " << toPrintRes << endl;
+    }
+    // If quad operation is division
+    else if(q.op == DIV) {
+        sfile << "\tmovl\t" << toPrint1 << ", %eax" << endl;
+        sfile << "\tcltd\n\tidivl\t" << toPrint2 << endl;
+        sfile << "\tmovl\t%eax, " << toPrintRes << endl;
+    }
+    // If quad operation is modulo
+    else if(q.op == MOD) {
+        sfile << "\tmovl\t" << toPrint1 << ", %eax" << endl;
+        sfile << "\tcltd\n\tidivl\t" << toPrint2 << endl;
+        sfile << "\tmovl\t%edx, " << toPrintRes << endl;
+    }
+
+    // If quad operation are Goto statements
+    else if(q.op == GOTO)
+        sfile << "\tjmp\t" << q.result << endl;
+    else if(q.op == GOTO_LT) {
+        sfile << "\tmovl\t" << toPrint1 << ", %eax" << endl;
+        sfile << "\tcmpl\t" << toPrint2 << ", %eax" << endl;
+        sfile << "\tjge\t.L" << label_num << endl;
+        sfile << "\tjmp\t" << q.result << endl;
+        sfile << ".L" << label_num++ << ":" << endl;
+    }
+    else if(q.op == GOTO_GT) {
+        sfile << "\tmovl\t" << toPrint1 << ", %eax" << endl;
+        sfile << "\tcmpl\t" << toPrint2 << ", %eax" << endl;
+        sfile << "\tjle\t.L" << label_num << endl;
+        sfile << "\tjmp\t" << q.result << endl;
+        sfile << ".L" << label_num++ << ":" << endl;
+    }
+    else if(q.op == GOTO_GTE) {
+        sfile << "\tmovl\t" << toPrint1 << ", %eax" << endl;
+        sfile << "\tcmpl\t" << toPrint2 << ", %eax" << endl;
+        sfile << "\tjl\t.L" << label_num << endl;
+        sfile << "\tjmp\t" << q.result << endl;
+        sfile << ".L" << label_num++ << ":" << endl;
+    }
+    else if(q.op == GOTO_LTE) {
+        sfile << "\tmovl\t" << toPrint1 << ", %eax" << endl;
+        sfile << "\tcmpl\t" << toPrint2 << ", %eax" << endl;
+        sfile << "\tjg\t.L" << label_num << endl;
+        sfile << "\tjmp\t" << q.result << endl;
+        sfile << ".L" << label_num++ << ":" << endl;
+    }
+    else if(q.op == GOTO_GTE) {
+        sfile << "\tmovl\t" << toPrint1 << ", %eax" << endl;
+        sfile << "\tcmpl\t" << toPrint2 << ", %eax" << endl;
+        sfile << "\tjl\t.L" << label_num << endl;
+        sfile << "\tjmp\t" << q.result << endl;
+        sfile << ".L" << label_num++ << ":" << endl;
+    }
+    else if(q.op == GOTO_EQ) {
+        sfile << "\tmovl\t" << toPrint1 << ", %eax" << endl;
+        if(q.arg2[0] >= '0' && q.arg2[0] <= '9')
+            sfile << "\tcmpl\t$" << q.arg2 << ", %eax" << endl;
+        else
+            sfile << "\tcmpl\t" << toPrint2 << ", %eax" << endl;
+        sfile << "\tjne\t.L" << label_num << endl;
+        sfile << "\tjmp\t" << q.result << endl;
+        sfile << ".L" << label_num++ << ":" << endl;
+    }
+    else if(q.op == GOTO_NEQ) {
+        sfile << "\tmovl\t" << toPrint1 << ", %eax" << endl;
+        sfile << "\tcmpl\t" << toPrint2 << ", %eax" << endl;
+        sfile << "\tje\t.L" << label_num << endl;
+        sfile << "\tjmp\t" << q.result << endl;
+        sfile << ".L" << label_num++ << ":" << endl;
+    }
+    else if(q.op == IF_GOTO) {
+        sfile << "\tmovl\t" << toPrint1 << ", %eax" << endl;
+        sfile << "\tcmpl\t$0" << ", %eax" << endl;
+        sfile << "\tje\t.L" << label_num << endl;
+        sfile << "\tjmp\t" << q.result << endl;
+        sfile << ".L" << label_num++ << ":" << endl;
+    }
+    else if(q.op == IF_FALSE_GOTO) {
+        sfile << "\tmovl\t" << toPrint1 << ", %eax" << endl;
+        sfile << "\tcmpl\t$0" << ", %eax" << endl;
+        sfile << "\tjne\t.L" << label_num << endl;
+        sfile << "\tjmp\t" << q.result << endl;
+        sfile << ".L" << label_num++ << ":" << endl;
+    }
+    else if(q.op == ARR_R) {
+        sfile << "\tmovl\t" << toPrint2 << ", %edx" << endl;
+        sfile << "cltq" << endl;
+        if(off1 < 0) {
+            sfile << "\tmovl\t" << off1 << "(%rbp,%rdx,1), %eax" << endl;
+            sfile << "\tmovl\t%eax, " << toPrintRes << endl;
+        }
+        else {
+            sfile << "\tmovq\t" << off1 << "(%rbp), %rdi" << endl;
+            sfile << "\taddq\t%rdi, %rdx" << endl;
+            sfile << "\tmovq\t(%rdx) ,%rax" << endl;
+            sfile << "\tmovq\t%rax, " << toPrintRes << endl;
+        }
+    }
+    else if(q.op == ARR_L) {
+        sfile << "\tmovl\t" << toPrint2 << ", %edx" << endl;
+        sfile << "\tmovl\t" << toPrint1 << ", %eax" << endl;
+        sfile << "cltq" << endl;
+        if(offRes > 0) {
+            sfile << "\tmovq\t" << offRes << "(%rbp), %rdi" << endl;
+            sfile << "\taddq\t%rdi, %rdx" << endl;
+            sfile << "\tmovl\t%eax, (%rdx)" << endl;
+        }
+        else
+            sfile << "\tmovl\t%eax, " << offRes << "(%rbp,%rdx,1)" << endl;
+    }
+    else if(q.op == REFERENCE) {
+        if(off1 < 0) {
+            sfile << "\tleaq\t" << toPrint1 << ", %rax" << endl;
+            sfile << "\tmovq\t%rax, " << toPrintRes << endl;
+        }
+        else {
+            sfile << "\tmovq\t" << toPrint1 << ", %rax" << endl;
+            sfile << "\tmovq\t%rax, " << toPrintRes << endl;
+        }
+    }
+    else if(q.op == DEREFERENCE) {
+        sfile << "\tmovq\t" << toPrint1 << ", %rax" << endl;
+        sfile << "\tmovq\t(%rax), %rdx" << endl;
+        sfile << "\tmovq\t%rdx, " << toPrintRes << endl;
+    }
+    else if(q.op == L_DEREF) {
+        sfile << "\tmovq\t" << toPrintRes << ", %rdx" << endl;
+        sfile << "\tmovl\t" << toPrint1 << ", %eax" << endl;
+        sfile << "\tmovl\t%eax, (%rdx)" << endl;
+    }
+    // If quad is a parameter
+    else if(q.op == PARAM) {
+        int paramSize;
+        data_dtype t;
+        if(glb3 != NULL)
+            t = glb3->type.type;
+        else
+            t = location3->type.type;
+        if(t == INT)
+            paramSize = 4;
+        else if(t == CHAR)
+            paramSize = 1;
+        else
+            paramSize = 8;
+        stringstream ss;
+        if(q.result[0] == '.')
+            ss << "\tmovq\t$" << toPrintRes << ", %rax" <<endl;
+        else if(q.result[0] >= '0' && q.result[0] <= '9')
+            ss << "\tmovq\t$" << q.result << ", %rax" <<endl;
+        else {
+            if(location3->type.type != ARRAY) {
+                if(location3->type.type != POINTER)
+                    ss << "\tmovq\t" << toPrintRes << ", %rax" <<endl;
+                else if(location3 == NULL)
+                    ss << "\tleaq\t" << toPrintRes << ", %rax" <<endl;
+                else
+                    ss << "\tmovq\t" << toPrintRes << ", %rax" <<endl;
+            }
+            else {
+                if(offRes < 0)
+                    ss << "\tleaq\t" << toPrintRes << ", %rax" <<endl;
+                else {
+                    ss << "\tmovq\t" << offRes << "(%rbp), %rdi" <<endl;
+                    ss << "\tmovq\t%rdi, %rax" <<endl;
+                }
+            }
+        }
+        params.push(make_pair(ss.str(), paramSize));
+    }
+    // If quad is making a call to another function
+    else if(q.op == CALL) {
+        int numParams = atoi(q.arg1.c_str());
+        int totalSize = 0, k = 0;
+
+        // If number of parameters is more than 6
+        if(numParams > 6) {
+            for(int i = 0; i < numParams - 6; i++) {
+                string s = params.top().first;
+                sfile << s << "\tpushq\t%rax" << endl;
+                totalSize += params.top().second;
+                params.pop();
+            }
+            sfile << params.top().first << "\tpushq\t%rax" << endl << "\tmovq\t%rax, %r9d" << endl;
+            totalSize += params.top().second;
+            params.pop();
+            sfile << params.top().first << "\tpushq\t%rax" << endl << "\tmovq\t%rax, %r8d" << endl;
+            totalSize += params.top().second;				
+            params.pop();
+            sfile << params.top().first << "\tpushq\t%rax" << endl << "\tmovq\t%rax, %rcx" << endl;
+            totalSize += params.top().second;
+            params.pop();
+            sfile << params.top().first << "\tpushq\t%rax" << endl << "\tmovq\t%rax, %rdx" << endl;
+            totalSize += params.top().second;
+            params.pop();
+            sfile << params.top().first << "\tpushq\t%rax" << endl << "\tmovq\t%rax, %rsi" << endl;
+            totalSize += params.top().second;
+            params.pop();
+            sfile << params.top().first << "\tpushq\t%rax" << endl << "\tmovq\t%rax, %rdi" << endl;
+            totalSize += params.top().second;
+            params.pop();
+        }
+        // Else if number of parameters less than or eual to 6
+        else {
+            while(!params.empty()) {
+                if(params.size() == 6) {
+                    sfile << params.top().first << "\tpushq\t%rax" << endl << "\tmovq\t%rax, %r9d" << endl;
+                    totalSize += params.top().second;
+                    params.pop();
+                }
+                else if(params.size() == 5) {
+                    sfile << params.top().first << "\tpushq\t%rax" << endl << "\tmovq\t%rax, %r8d" << endl;
+                    totalSize += params.top().second;
+                    params.pop();
+                }
+                else if(params.size() == 4) {
+                    sfile << params.top().first << "\tpushq\t%rax" << endl << "\tmovq\t%rax, %rcx" << endl;
+                    totalSize += params.top().second;
+                    params.pop();
+                }
+                else if(params.size() == 3) {
+                    sfile << params.top().first << "\tpushq\t%rax" << endl << "\tmovq\t%rax, %rdx" << endl;
+                    totalSize += params.top().second;
+                    params.pop();
+                }
+                else if(params.size() == 2) {
+                    sfile << params.top().first << "\tpushq\t%rax" << endl << "\tmovq\t%rax, %rsi" << endl;
+                    totalSize += params.top().second;
+                    params.pop();
+                }
+                else if(params.size() == 1) {
+                    sfile << params.top().first << "\tpushq\t%rax" << endl << "\tmovq\t%rax, %rdi" << endl;
+                    totalSize += params.top().second;
+                    params.pop();
+                }
+            }
+        }
+        sfile << "\tcall\t" << q.result << endl;
+        if(q.arg2 != "")
+            sfile << "\tmovq\t%rax, " << toPrint2 << endl;
+        sfile << "\taddq\t$" << totalSize << ", %rsp" << endl;
+    }
+
+    // If quad is returning from a function
+    else if(q.op == RETURN) {
+        if(q.result != "")
+            sfile << "\tmovq\t" << toPrintRes << ", %rax" << endl;
+        sfile << "\tleave" << endl;
+        sfile << "\tret" << endl;
+    }
+
+}
+
+// Function to generate target assembly code for the given TAC file
+void generate_target(ofstream& sfile) {
+    output_global_info(sfile);
+    output_strings(sfile);
+    symbol_table* curr_function_table = NULL;
+    ST_entry* curr_function = NULL;
+    generate_labels();
+
+    for(int i = 0; i < (int)TAC_list.TAC_quad_list.size(); i++) {
+        // Print the TAC as comment in the file
+        sfile << "# " << TAC_list.TAC_quad_list[i].print_TAC() << endl;
+        if(labels.count(i))
+            sfile << labels[i] << ":" << endl;
+
+        // Function definition and required actions
+        if(TAC_list.TAC_quad_list[i].op == FUNC_BEG) {
+            i++;
+            if(TAC_list.TAC_quad_list[i].op != FUNC_END)
+                i--;
+            else
+                continue;
+            curr_function = ST_global.search_global_ST(TAC_list.TAC_quad_list[i].result);
+            curr_function_table = curr_function->nested_symbol_table;
+            ST = curr_function_table;
+            int has_param = 1, memory_bind = 16;
+            for(int j = 0; j < (int)curr_function_table->list_ST_entry.size(); j++) {
+                if(curr_function_table->list_ST_entry[j]->name == "RETVAL") {
+                    has_param = 0;
+                    memory_bind = 0;
+                    if(curr_function_table->list_ST_entry.size() > j + 1)
+                        memory_bind = -curr_function_table->list_ST_entry[j + 1]->size;
+                }
+                else {
+                    if(!has_param) {
+                        curr_function_table->list_ST_entry[j]->offset = memory_bind;
+                        if(curr_function_table->list_ST_entry.size() > j + 1)
+                            memory_bind -= curr_function_table->list_ST_entry[j + 1]->size;
+                    }
+                    else {
+                        curr_function_table->list_ST_entry[j]->offset = memory_bind;
+                        memory_bind += 8;
+                    }
+                }
+            }
+            if(memory_bind >= 0)
+                memory_bind = 0;
+            else
+                memory_bind *= -1;
+            function_name = TAC_list.TAC_quad_list[i].result;
+            generate_prologue(memory_bind, sfile);
+        }
+
+        // Function which is called when returning from a function
+        else if(TAC_list.TAC_quad_list[i].op == FUNC_END) {
+            ST = &ST_global;
+            function_name = "";
+            sfile << "\tleave" << endl;
+            sfile << "\tret" << endl;
+            sfile << "\t.size\t" << TAC_list.TAC_quad_list[i].result << ", .-" << TAC_list.TAC_quad_list[i].result << endl;
+        }
+
+        if(function_name != "")
+            generate_assembly(TAC_list.TAC_quad_list[i], sfile);
+    }
+}
+
+// Main function
+int main(int argc, char* argv[]) {
+    ST = &ST_global;
+    yyparse();
+
+    assembly_file = "ass6_20CS10085_20CS30065_" + string(argv[argc - 1]) + ".s";
+    ofstream sfile;
+    sfile.open(assembly_file);
+
+    TAC_list.print_TAC();               // Print the three address TAC_quad_list
+
+    ST->print_ST("ST.global");         // Print the ST_entry tables
+
+    ST = &ST_global;
+
+    generate_target(sfile);      // Function to generate the target assembly code
+
+    sfile.close();
+
+    return 0;
+}

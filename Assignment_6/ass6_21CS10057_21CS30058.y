@@ -1,1720 +1,1875 @@
-/*
-Name: Sanskar Mittal              Roll No:   21CS10057
-Name: Voddula Karthik Reddy       Roll No:   21CS30058
-Semester: 5th
-Assignment 6: Target Code Generator for tinyC
-File: yacc file
-*/
-
 %{
-#include <iostream>
-#include <string.h>
-#include <string>
-#include <stdio.h>
-#include <sstream>
-#include <cstdlib>
-#include "ass6_21CS10057_21CS30058_translator.h"
-extern int yylineno;
-void yyerror(const char*);
-void printinfo(char*);
-extern "C" int yylex();
-extern string Type;
-using namespace std;
+    #include <iostream>
+    #include "ass6_20CS10085_20CS30065_translator.h"
+    using namespace std;
 
+    //from lexer
+    extern int yylex();                     
+    extern char* yytext;                    
+    extern int yylineno;                    
 
+    //to report error in bison
+    void yyerror(string s);                 
+
+    //to keep track of global data structures shared across all files
+    extern int next_instruction;                   
+    extern quad_TAC_arr TAC_list;              
+    extern symbol_table ST_global;            
+    extern symbol_table* ST;                 
+    extern vector<string> f_strings;     
+
+    int num_strings = 0;                       
 %}
 
 %union {
-//#include "ass5_21CS10057_21CS30058_translator.h"
-  int instr;
-  sym* symp;
-  int intval;
-  char* charval;
-  symtype* symtp;
-  expr* E;
-  statement* Stmt;
-  array1* Arr;
-  char unaryOperator;
+    //set of placeholders
+    int intval;                     // For integer variable
+    char charval;                   // For char variable
+    float floatval;                 // For float variable
+    void* ptr;                      // For pointer
+    string* str;                    // For string
+
+    ST_entry_type* symType;            
+    ST_entry* symp;                   
+    data_dtype dtype;                 
+    opcode opc;                     
+    expression* expr;               
+    declaration* dec;               
+    vector<declaration*> *decList;  
+    param* parameter;                     
+    vector<param*> *parameterList;        
 }
 
-%token RIGHT_ARROW
-%token INCREMENT
-%token DECREMENT
-%token LSHIFT
-%token RSHIFT
-%token LESS_THAN_EQUAL_TO
-%token GREATER_THAN_EQUAL_TO
-%token DOUBLE_EQUAL
-%token NOT_EQUAL
-%token BINARY_AND
-%token BINARY_OR
-%token ELLIPSIS
-%token MUL_ASSIGN
-%token DIV_ASSIGN
-%token MOD_ASSIGN
-%token ADD_ASSIGN
-%token SUB_ASSIGN
-%token LSHIFT_ASSIGN
-%token RSHIFT_ASSIGN
-%token AND_ASSIGN
-%token XOR_ASSIGN
-%token OR_ASSIGN
-%token AUTO
-%token BREAK 
-%token CASE 
-%token CHAR
-%token CONST 
-%token CONTINUE
-%token DEFAULT
-%token DO
-%token DOUBLE
-%token ELSE
-%token ENUM
-%token EXTERN
-%token FLOAT
-%token FOR
-%token GOTO
-%token IF
-%token INLINE
-%token INT
-%token LONG
-%token REGISTER
-%token RESTRICT
-%token RETURN
-%token SHORT
-%token SIGNED
-%token SIZEOF
-%token STATIC
-%token STRUCT
-%token SWITCH
-%token TYPEDEF
-%token UNION
-%token UNSIGNED
-%token VOID
-%token VOLATILE
-%token WHILE
-%token BOOL
-%token COMPLEX
-%token IMAGINARY
-%token COMMENT_MULTI
-%token COMMENT_SINGLE
-%token <symp> IDENTIFIER
-%token <intval> INTEGER_NO
-%token <charval> FLOAT_NO STRING CHARACTER ENUMERATION_CONSTANT 
-%token PUNCTUATOR
-%token WS
+/*
+    All tokens
+*/
+%token AUTO BREAK CASE CHAR_ CONST CONTINUE DEFAULT DO DOUBLE ELSE ENUM EXTERN FLOAT_ FOR GOTO_ IF INLINE INT_ LONG REGISTER RESTRICT RETURN_ SHORT SIGNED SIZEOF STATIC STRUCT SWITCH TYPEDEF UNION UNSIGNED VOID_ VOLATILE WHILE BOOL_ COMPLEX IMAGINARY
+%token LEFT_SQUARE RIGHT_SQUARE LEFT_PARENTHESIS RIGHT_PARENTHESIS LEFT_CURLY RIGHT_CURLY 
+%token DOT ARROW SELF_INCREASE SELF_DECREASE BITWISE_AND MUL PLUS SUBTRACT BITWISE_NOR EXCLAMATION F_SLASH MODULO 
+%token LEFT_SHIFT RIGHT_SHIFT LESS_THAN GREATER_THAN LESS_THAN_EQUAL GREATER_THAN_EQUAL EQUAL NOT_EQUAL BITWISE_XOR BITWISE_OR 
+%token LOGICAL_AND LOGICAL_OR QUESTION_MARK COLON SEMICOLON ELLIPSIS 
+%token ASSIGN_ MUL_ASSIGN F_SLASH_ASSIGN MODULO_ASSIGN PLUSASSIGN SUBTRACT_ASSIGN LEFT_SHIFT_ASSIGN RIGHT_SHIFT_ASSIGN BITWISE_AND_ASSIGN BITWISE_XOR_ASSIGN BITWISE_OR_ASSIGN COMMA HASH
 
-%start translation_unit
+// identifier
+%token <str> IDENTIFIER
 
-%right THEN ELSE
+// integral constant
+%token <intval> INTEGER_CONSTANT
 
-%type <intval> argument_expression_list
+// floating constant
+%token <floatval> FLOATING_CONSTANT
 
-%type <unaryOperator> unary_operator
-%type <symp> constant initializer
-%type <symp> direct_declarator init_declarator declarator
-%type <symtp> pointer
+//character constant
+%token <charval> CHAR_CONSTANT
 
-//Auxillary non terminals M and N
-%type <instr> M
-%type <Stmt> N
+// string literals
+%token <str> STRING_LITERAL
 
-//Array to be used later
-%type <Arr> postfix_expression
-        unary_expression
-        cast_expression
-
-
-//Statements
-%type <Stmt>  
-        statement
-        labeled_statement 
-        compound_statement
-        selection_statement
-        iteration_statement
-        jump_statement
-        block_item
-        block_item_list
-
-%type <E> 
+// Non-terminals of type expression
+%type <expr> 
         expression
         primary_expression 
-        multplicative_expression
+        multiplicative_expression
         additive_expression
         shift_expression
         relational_expression
         equality_expression
-        AND_expression
-        exclusive_OR_expression
-        inclusive_OR_expression
-        logical_AND_expression
-        logical_OR_expression
+        and_expression
+        exclusive_or_expression
+        inclusive_or_expression
+        logical_and_expression
+        logical_or_expression
         conditional_expression
         assignment_expression
+        postfix_expression
+        unary_expression
+        cast_expression
         expression_statement
+        statement
+        compound_statement
+        selection_statement
+        iteration_statement
+        labeled_statement 
+        jump_statement
+        block_item
+        block_item_list
+        initializer
+        M
+        N
 
+// Non-terminals for unary operator
+%type <charval> unary_operator
 
+// The pointer non-terminal 
+%type <intval> pointer
 
+// data type declarators
+%type <dtype> type_specifier declaration_specifiers
+
+// declartion type non terminals
+%type <dec> direct_declarator initializer_list init_declarator declarator function_prototype
+
+// list of declartions
+%type <decList> init_declarator_list
+
+// Non-terminals of type param
+%type <parameter> parameter_declaration
+
+// Non-terminals of type parameterList
+%type <parameterList> parameter_list parameter_type_list parameter_type_list_opt argument_expression_list
+
+// removes dangling else ambiguity
+%expect 1
+%nonassoc ELSE
+
+// The start state is translation_unit
+%start translation_unit
 
 %%
 
-
-
-constant
-        :INTEGER_NO {
-  
-        string str = to_string($1);
-        int temp = 1;
-        $$ = gentemp(new symtype("INTEGER"), str);
-        emit("EQUAL", $$->name, $1);
+primary_expression: 
+        IDENTIFIER
+        {
+            $$ = new expression();                      // new expression node
+            string s = *($1);
+            ST->search_lexeme(s);                       //store the identifier in symbol table
+            $$->location = s;                           // s now points to the pointer to symbol table entry
         }
-        |FLOAT_NO {
-       
-        int temp = 1;
-        $$ = gentemp(new symtype("DOUBLE"), string($1));
-        emit("EQUAL", $$->name, string($1));
+        | INTEGER_CONSTANT
+        {
+            $$ = new expression();                  // new expression node
+            $$->location = ST->generate_tem_var(INT);             // create a temporary variable to store the value
+            add_TAC($$->location, $1, ASSIGN);          //create a TAC quad to assign the value of constant to temporary variable
+            ST_entry_value* val = new ST_entry_value();
+            val->initialize($1);                        // intialise 
+            ST->search_lexeme($$->location)->initial_value = val;     // update the intial value of temporary variable
         }
-        |ENUMERATION_CONSTANT  {//later
+        | FLOATING_CONSTANT
+        {
+            $$ = new expression();                  // new expression node
+            $$->location = ST->generate_tem_var(FLOAT);           //create a temporary variable to store the value
+            add_TAC($$->location, $1, ASSIGN);          //create a TAC quad to assign the value of constant to temporary variable
+            ST_entry_value* val = new ST_entry_value();
+            val->initialize($1);                    // // intialise 
+            ST->search_lexeme($$->location)->initial_value = val;      // update the intial value of temporary variable
         }
-        |CHARACTER {
-       
-        int temp = 1;
-        $$ = gentemp(new symtype("CHAR"),$1);
-        emit("EQUAL", $$->name, string($1));
+        | CHAR_CONSTANT
+        {
+            $$ = new expression();                  // new expression node
+            $$->location = ST->generate_tem_var(CHAR);            //create a temporary variable to store the value
+            add_TAC($$->location, $1, ASSIGN);  //create a TAC quad to assign the value of constant to temporary variable
+            ST_entry_value* val = new ST_entry_value();
+            val->initialize($1);                    // intialise 
+            ST->search_lexeme($$->location)->initial_value = val;      // update the intial value of temporary variable
+        }
+        | STRING_LITERAL
+        {
+            $$ = new expression();                          // new expression node
+            $$->location = ".LC" + to_string(num_strings++);//create a new string label with prefix LC that indicates string parameters in .s files
+            f_strings.push_back(*($1));          // update the number of strings, that will be used in naming label 
+                                                        //add the string to set of string constants
+        }
+        | LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
+        {
+            $$ = $2;                                // copy content from right to left
         }
         ;
 
-
-primary_expression:
-           IDENTIFIER {
-        $$ = new expr();
-        $$->loc = $1;
-        
-        int temp = 1;
-        $$->type = "NONBOOL";
-        }
-        | constant {
-        $$ = new expr();
-        int zero = 0;   
-        int one = 1;
-        $$->loc = $1;
-        }
-        | STRING {
-        $$ = new expr();
-        symtype* tmp = new symtype("PTR");
-        int zero = 0;   
-        int one = 1;
-        $$->loc = gentemp(tmp, $1);
-        $$->loc->type->ptr = new symtype("CHAR");
-        }
-        | '(' expression ')' {
-       
-        int temp = 1;
-        $$ = $2;
-        }
-
-postfix_expression:
-          primary_expression
-          { //printinfo("postfix_expression -> primary_expression\n");
-                $$ = new array1 ();
-                $$->array1 = $1->loc;
-                $$->loc = $$->array1;
-                $$->type = $1->loc->type;
-
-           }
-          |postfix_expression '[' expression ']'
-          { //printinfo("postfix_expression -> postfix_expression [ expression ]\n"); 
-
-                $$ = new array1();
-                
-                $$->array1 = $1->loc;   
-                                   // copy the base
-                $$->type = $1->type->ptr;                               // type = type of element
-                $$->loc = gentemp(new symtype("INTEGER"));              // store computed address
-                
-                // New address =(if only) already computed + $3 * new width
-                if ($1->cat=="ARR") {                                           // if already computed
-                        sym* t = gentemp(new symtype("INTEGER"));
-                        stringstream STring;
-                    STring <<size_type($$->type);
-                    string TempString = STring.str();
-                        int two = 2;    
-                      
-                    char* Int_STring = (char*) TempString.c_str();
-                        string str = string(Int_STring);                                
-                        emit ("MULT", t->name, $3->loc->name, str);
-                        emit ("ADD", $$->loc->name, $1->loc->name, t->name);
-                }
-                else {
-                        stringstream STring;
-                    STring <<size_type($$->type);
-                    string TempString = STring.str();
-                        int four = 4;   
-                        int five = 5;
-                    char* Int_STring1 = (char*) TempString.c_str();
-                        string str1 = string(Int_STring1);              
-                        emit("MULT", $$->loc->name, $3->loc->name, str1);
-                }
-
-                // Mark that it contains array1 address and first time computation is done
-                $$->cat = "ARR";
-
-          }
-
-          |postfix_expression '('  ')'
-          {}
-          |postfix_expression '(' argument_expression_list ')'
-          { //printinfo("postfix_expression -> postfix_expression ( argument_expression_list_opt )\n"); 
-                 $$ = new array1();
-                $$->array1 = gentemp($1->type);
-               
-                $$ = new array1();
-                $$->array1 = gentemp($1->type);
-                stringstream STring;
-            STring <<$3;
-            string TempString = STring.str();
-              
-            char* Int_STring = (char*) TempString.c_str();
-                string str = string(Int_STring);                
-                emit("CALL", $$->array1->name, $1->array1->name, str);               
-                emit("CALL", $$->array1->name, $1->array1->name, str);
-
-          }
-            |postfix_expression '.' IDENTIFIER
-            { //printinfo("postfix_expression -> postfix_expression . identifier\n");
-             }
-            |postfix_expression RIGHT_ARROW IDENTIFIER
-            { //printinfo("postfix_expression -> postfix_expression -> identifier\n"); 
+postfix_expression: 
+        primary_expression
+        {}
+        | postfix_expression LEFT_SQUARE expression RIGHT_SQUARE
+        {
+            //to compute address of array
+            ST_entry_type to = ST->search_lexeme($1->location)->type;      // extract the type of variable
+            string f = "";
+            if(!($1->order_dim)) {
+                f = ST->generate_tem_var(INT);                       // Generate a new temporary variable
+                add_TAC(f, 0, ASSIGN);
+                $1->store_addr = new string(f);
             }
-            |postfix_expression INCREMENT
-             { //printinfo("postfix_expression -> postfix_expression ++\n"); 
+            string temp = ST->generate_tem_var(INT);
 
-                $$ = new array1();
-               
-                // copy $1 to $$
-                $$->array1 = gentemp($1->array1->type);
-                emit ("EQUAL", $$->array1->name, $1->array1->name);
+            
+            add_TAC(temp, $3->location, "", ASSIGN);                //t = E.addr
+            add_TAC(temp, temp, "4", MULT);                         //t = t * 4
+            add_TAC(f, temp, "", ASSIGN);                           //f = t
+            $$ = $1;
+        }
+        | postfix_expression LEFT_PARENTHESIS RIGHT_PARENTHESIS
+        {  
+             
+            //function call with the function name no parameter
+            symbol_table* function_ST = ST_global.search_lexeme($1->location)->nested_symbol_table;
+            add_TAC($1->location, "0", "", CALL);   //call func_name, 0
+        
+        }
+        | postfix_expression LEFT_PARENTHESIS argument_expression_list RIGHT_PARENTHESIS
+        {   
 
-                // Increment $1
-                emit ("ADD", $1->array1->name, $1->array1->name, "1");
+            //function call with the function name and parameter list
+            symbol_table* function_ST = ST_global.search_lexeme($1->location)->nested_symbol_table;
+            vector<param*> params = *($3);                                      // Get the list of parameters
+            vector<ST_entry*> paramsList = function_ST->list_ST_entry;
 
-             }
-            |postfix_expression DECREMENT
-            { //printinfo("postfix_expression -> postfix_expression --\n");
+            for(int i = 0; i < (int)params.size(); i++) {
+                add_TAC(params[i]->name, "", "", PARAM);                        //create a tac for each of the parameter
+            }
 
-                $$ = new array1();
+            data_dtype return_type = function_ST->search_lexeme("RETVAL")->type.type;  // extract the return type of the function
+            if(return_type == VOID)                                                     // If the function returns void
+                add_TAC($1->location, (int)params.size(), CALL);                //tac would be like call func_name, param_num
 
-                // copy $1 to $$
-                $$->array1 = gentemp($1->array1->type);
-                emit ("EQUAL", $$->array1->name, $1->array1->name);
-           
-                // Decrement $1
-                emit ("SUB", $1->array1->name, $1->array1->name, "1");
+            else {                                                                  // If the function returns a value
+                string return_value = ST->generate_tem_var(return_type);                      //generate a temporary variable to store return value
+                add_TAC($1->location, to_string(params.size()), return_value, CALL);  //t = call func_name, paaram_num
+                $$ = new expression();
+                $$->location = return_value;                                              
+            }
+        }
+        | postfix_expression DOT IDENTIFIER
+        {}
+        | postfix_expression ARROW IDENTIFIER
+        {}
+        | postfix_expression SELF_INCREASE
+        {   
+            //for a++: t = a, a = t + 1
+            $$ = new expression();                                                          // new expression node
+            ST_entry_type t = ST->search_lexeme($1->location)->type;                       // generate a temporary vraiable of the same type as of the varible
+            
+            if(t.type == ARRAY) 
+            {   //if the type of variable is array
+                //ARR_R is like a = b[i]
+                //ARR_L is like a[i] = b            
 
-             }
-            |'(' type_name ')' '{' initializer_list '}'
-            { //printinfo("postfix_expression -> ( type_name ) { initializer_list }\n");
-
-                $$ = new array1();
-                int fsf = 8;   
-
-                $$->array1 = gentemp(new symtype("INTEGER"));
-                $$->loc = gentemp(new symtype("INTEGER"));
-
-             }
-            |'(' type_name ')' '{' initializer_list ',' '}'
-             { //printinfo("postfix_expression -> ( type_name ) { initializer_list , }\n"); 
-
-             $$ = new array1();
-                int sff=123;  
+                $$->location = ST->generate_tem_var(ST->search_lexeme($1->location)->type.next_elem_type);
+                add_TAC($$->location, $1->location, *($1->store_addr), ARR_R); //assign the old value of $$
+                string temp = ST->generate_tem_var(t.next_elem_type);
+                add_TAC(temp, $1->location, *($1->store_addr), ARR_R);  //t = a[i]
+                add_TAC(temp, temp, "1", ADD);                      //t = t+1;
+                add_TAC($1->location, temp, *($1->store_addr), ARR_L);  //a[i] = t
+            }
+            else {
+                $$->location = ST->generate_tem_var(ST->search_lexeme($1->location)->type.type);
                 
-                $$->array1 = gentemp(new symtype("INTEGER"));
-                $$->loc = gentemp(new symtype("INTEGER"));
+                //t = a++ i.e. t=a and a=a+1
+                add_TAC($$->location, $1->location, "", ASSIGN);                         // return the old value 
+                add_TAC($1->location, $1->location, "1", ADD);                           // then update the value by 1
+            }
+        }
+        | postfix_expression SELF_DECREASE
+        {
+            //follow similar to self increment
+            $$ = new expression();                                          // new expression node
+            $$->location = ST->generate_tem_var(ST->search_lexeme($1->location)->type.type);          // Generate a new temporary variable
+            ST_entry_type t = ST->search_lexeme($1->location)->type;
+            if(t.type == ARRAY) {
+                $$->location = ST->generate_tem_var(ST->search_lexeme($1->location)->type.next_elem_type);
+                string temp = ST->generate_tem_var(t.next_elem_type);
+                add_TAC(temp, $1->location, *($1->store_addr), ARR_R);
+                add_TAC($$->location, temp, "", ASSIGN);
+                add_TAC(temp, temp, "1", SUB);
+                add_TAC($1->location, temp, *($1->store_addr), ARR_L);
+            }
+            else {
+                $$->location = ST->generate_tem_var(ST->search_lexeme($1->location)->type.type);
+                add_TAC($$->location, $1->location, "", ASSIGN);                         // return the old value
+                add_TAC($1->location, $1->location, "1", SUB);                           // the update the value by decreasing by 1
+            }
+        }
+        | LEFT_PARENTHESIS type_name RIGHT_PARENTHESIS LEFT_CURLY initializer_list RIGHT_CURLY
+        {}
+        | LEFT_PARENTHESIS type_name RIGHT_PARENTHESIS LEFT_CURLY initializer_list COMMA RIGHT_CURLY
+        {}
+        ;
 
+argument_expression_list: 
+        assignment_expression
+        {
+            param* first = new param();                     // Create a new parameter
+            first->name = $1->location;                     //param would point to the symbol tabel entry of the parameter
+            first->type = ST->search_lexeme($1->location)->type;//set the type of parameter
+            $$ = new vector<param*>;
+            $$->push_back(first);                       // Add the parameter to the list to keep track of all parameters
+        }
+        | argument_expression_list COMMA assignment_expression
+        {
+            //if there are more than first_operand parameters
+            param* next = new param();                  // Create a new parameter
+            next->name = $3->location;                  //set type and name of parameter
+            next->type = ST->search_lexeme(next->name)->type;
+            $$ = $1;
+            $$->push_back(next);                        // Add the parameter to the list created in the above production. this list would contain all parameters name relevant to a function
+        }
+        ;
 
-             }
-          ;
-
-argument_expression_list_optional:
-              argument_expression_list
-              |
-              ;
-
-argument_expression_list:
-            assignment_expression
-            { //printinfo("argument_expression_list -> assignment_expression\n");
-                emit ("PARAM", $1->loc->name);
-                $$ = 1;
-
-             }
-            |argument_expression_list ',' assignment_expression
-            { //printinfo("argument_expression_list -> argument_expression_list , assignment_expression\n"); 
-                emit ("PARAM", $3->loc->name);
-                $$ = $1+1;
-
-            } 
-            ;
-
-unary_expression:
+unary_expression: 
         postfix_expression
-        { //printinfo("unary_expression -> postfix_expression\n"); 
-        $$ = $1;
+        {}
+        | SELF_INCREASE unary_expression
+        {
+            $$ = new expression();
+            ST_entry_type type = ST->search_lexeme($2->location)->type;
+            if(type.type == ARRAY) {
+                string t = ST->generate_tem_var(type.next_elem_type);
+                add_TAC(t, $2->location, *($2->store_addr), ARR_R); //t = a[i]
+                add_TAC(t, t, "1", ADD);                        //t = t+1
+                add_TAC($2->location, t, *($2->store_addr), ARR_L); //a[i] = t
+                $$->location = ST->generate_tem_var(ST->search_lexeme($2->location)->type.next_elem_type);
+            }
+            else {
+                add_TAC($2->location, $2->location, "1", ADD);                       // Increment the value
+                $$->location = ST->generate_tem_var(ST->search_lexeme($2->location)->type.type);
+            }
+            $$->location = ST->generate_tem_var(ST->search_lexeme($2->location)->type.type);
+            add_TAC($$->location, $2->location, "", ASSIGN);                         // Assign the updated value to $$
+        }
+        | SELF_DECREASE unary_expression
+        {
+            $$ = new expression();
+            ST_entry_type type = ST->search_lexeme($2->location)->type;
+            if(type.type == ARRAY) {
+                string t = ST->generate_tem_var(type.next_elem_type);
+                add_TAC(t, $2->location, *($2->store_addr), ARR_R);
+                add_TAC(t, t, "1", SUB);
+                add_TAC($2->location, t, *($2->store_addr), ARR_L);
+                $$->location = ST->generate_tem_var(ST->search_lexeme($2->location)->type.next_elem_type);
+            }
+            else {
+                add_TAC($2->location, $2->location, "1", SUB);                       // Decrement the value
+                $$->location = ST->generate_tem_var(ST->search_lexeme($2->location)->type.type);
+            }
+            add_TAC($$->location, $2->location, "", ASSIGN);                         // Assign the updated value to $$
+        }
+        | unary_operator cast_expression
+        {
+            // handle different unary operator using switch
+            
+            switch($1) {
+                case '&':       // Address of variable i.e &n
+                    $$ = new expression();
+                    $$->location = ST->generate_tem_var(POINTER);                 // Generate temporary of the same data type i.e. pointer
+                    add_TAC($$->location, $2->location, "", REFERENCE);          // this would be a reference operator a = &n 
+                    break;
+                case '*':   // De-referencing
+                    $$ = new expression();
+                    $$->location = ST->generate_tem_var(INT);                       // Generate temporary of the same data type
+                    $$->order_dim = 1;                                                   //order_dim keeps a track of dimension
+                    $$->store_addr = new string($2->location);                          //store_addr keeps a track of expression address whose address is provided
+                    add_TAC($$->location, $2->location, "", DEREFERENCE);           // generate TAC quad a = *n
+                    break;
+                case '-':   // Unary minus
+                    $$ = new expression();
+                    $$->location = ST->generate_tem_var();                        // Generate temporary of the same data type
+                    add_TAC($$->location, $2->location, "", U_MINUS);            // generate TAC quad
+                    //$$ = -$2
+                    break;
+                case '!':   // Logical not 
+                    $$ = new expression();
+                    $$->location = ST->generate_tem_var(INT);                     // Generate temporary of the same data type
+                    int temp = next_instruction + 2;
+                    add_TAC(to_string(temp), $2->location, "0", GOTO_EQ);   
+                    temp = next_instruction + 3;                            
+                    add_TAC(to_string(temp), "", "", GOTO);                 
+                    add_TAC($$->location, "1", "", ASSIGN);                 
+                    temp = next_instruction + 2;
+                    add_TAC(to_string(temp), "", "", GOTO);
+                    add_TAC($$->location, "0", "", ASSIGN);
+                    break;
+            }
+            /*
+                in: if $2==0 goto in+2
+                in+1: goto in+3
+                in+2: $$ = 1
+                in+3: goto in+4
+                in+4: $$ = 0
+            */
 
         }
-        |INCREMENT unary_expression
-        { //printinfo("unary_expression -> ++ unary_expression\n");
-                // Increment $2
-                emit ("ADD", $2->array1->name, $2->array1->name, "1");
-                int zero = 0;   
-                int one = 1;
-                // Use the same value as $2
-                $$ = $2;
-
-         }
-        |DECREMENT unary_expression
-        { //printinfo("unary_expression -> −− unary_expression\n"); 
-        // Decrement $2
-                emit ("SUB", $2->array1->name, $2->array1->name, "1");
-                int zero = 0;   
-                int one = 1;
-                // Use the same value as $2
-                $$ = $2;
-
-        }
-        |unary_operator cast_expression
-        { //printinfo("unary_expression -> unary_operator cast_expression\n");
-        $$ = new array1();
-                int zero = 0;   
-                int one = 1;
-                switch ($1) {
-                        case '&':
-                                $$->array1 = gentemp((new symtype("PTR")));
-                                $$->array1->type->ptr = $2->array1->type; 
-                                emit ("ADDRESS", $$->array1->name, $2->array1->name);
-                                break;
-                        case '*':
-                                $$->cat = "PTR";
-                                $$->loc = gentemp ($2->array1->type->ptr);
-                                emit ("PTRR", $$->loc->name, $2->array1->name);
-                                $$->array1 = $2->array1;
-                                break;
-                        case '+':
-                                $$ = $2;
-                                break;
-                        case '-':
-                                $$->array1 = gentemp(new symtype($2->array1->type->type));
-                                emit ("UMINUS", $$->array1->name, $2->array1->name);
-                                break;
-                        case '~':
-                                $$->array1 = gentemp(new symtype($2->array1->type->type));
-                                emit ("BNOT", $$->array1->name, $2->array1->name);
-                                break;
-                        case '!':
-                                $$->array1 = gentemp(new symtype($2->array1->type->type));
-                                emit ("LNOT", $$->array1->name, $2->array1->name);
-                                break;
-                        default:
-                                break;
-                }
-
-        }
-        |SIZEOF unary_expression
-        { //printinfo("unary_expression -> sizeof unary_expression\n"); 
-        }
-        |SIZEOF '(' type_name ')' 
-        { //printinfo("unary_expression -> sizeof ( type_name ) \n"); 
-        }
-        ;          
+        | SIZEOF unary_expression
+        {}
+        | SIZEOF LEFT_PARENTHESIS type_name RIGHT_PARENTHESIS
+        {}
+        ;
 
 unary_operator:
-        '&'
-        { //printinfo("unary_operator -> &\n");
-
-           $$ = '&';
-
-         }
-        |'*'
-        { //printinfo("unary_operator -> *\n"); 
-        $$ = '*';
-
+        BITWISE_AND
+        {
+            $$ = '&';
         }
-        |'+'
-        { //printinfo("unary_operator -> +\n"); 
-        $$ = '+';
-
+        | MUL
+        {
+            $$ = '*';
         }
-        |'-'
-        { //printinfo("unary_operator -> -\n");
-
-          $$ = '-';
-
-         }
-        |'~'
-        { //printinfo("unary_operator -> ~\n"); 
-        $$ = '~';
-
+        | PLUS
+        {
+            $$ = '+';
         }
-        |'!'
-        { //printinfo("unary_operator -> !\n"); 
-                $$ = '!';
-
-
+        | SUBTRACT
+        {
+            $$ = '-';
+        }
+        | BITWISE_NOR
+        {
+            $$ = '~';
+        }
+        | EXCLAMATION
+        {
+            $$ = '!';
         }
         ;
 
-cast_expression:
-         unary_expression
-         { //printinfo("cast_expression -> unary_expression\n");
+cast_expression: 
+        unary_expression
+        {}
+        | LEFT_PARENTHESIS type_name RIGHT_PARENTHESIS cast_expression
+        {}
+        ;
 
-                $$=$1;
+/*
+To involve an arry in an expression, we need to find the correct address depending upon the indexing
+and width of the array. temporary variables storing the appropriate address would be used for indexing
 
-          }
-         |'(' type_name ')' cast_expression
-         { //printinfo("cast_expression -> ( type_name ) cast_expression\n"); 
+else for normal variables directly assign the values
+*/
 
-                $$=$4;
 
-         }
-         ;
-
-multplicative_expression:
-            cast_expression
-            { //printinfo("multiplicative_expression -> cast_expression\n");
-
-                $$ = new expr();
-                int zero = 0;   
-                int one = 1;
-                if ($1->cat=="ARR") { // Array
-                        $$->loc = gentemp($1->loc->type);
-                        int two = 2;    
-                        int three = 3;
-                        emit("ARRR", $$->loc->name, $1->array1->name, $1->loc->name);
+multiplicative_expression: 
+        cast_expression
+        {
+            $$ = new expression();                                  // Generate new expression
+            ST_entry_type tp = ST->search_lexeme($1->location)->type;
+            if(tp.type == ARRAY) {                                      // If the type is an array
+                
+                // Generate new temporary variable to store the value of array at the index
+                string t = ST->generate_tem_var(tp.next_elem_type);                // Generate a temporary
+                if($1->store_addr != NULL) {
+                    add_TAC(t, $1->location, *($1->store_addr), ARR_R);   
+                    $1->location = t;                                 
+                    $1->type = tp.next_elem_type; 
+                    $$ = $1;
                 }
-                else if ($1->cat=="PTR") { // Pointer
-                        $$->loc = $1->loc;
-                        int two = 2;    
-                        int three = 3;
-                }
-                else { // otherwise
-                        $$->loc = $1->array1;
-                        int two = 2;    
-                        int three = 3;
-                }
-
-             }
-            |multplicative_expression '*' cast_expression
-            { //printinfo("multiplicative_expression -> multiplicative_expression * cast_expression\n"); 
-            if (typecheck ($1->loc, $3->array1) ) {
-                        $$ = new expr();
-                        int two = 2;    
-                        int three = 3;
-                        $$->loc = gentemp(new symtype($1->loc->type->type));
-                        emit ("MULT", $$->loc->name, $1->loc->name, $3->array1->name);
-                }
-                else cout << "Type Error"<< endl;
-
+                else
+                    $$ = $1;        // copy content from right to left
             }
-            |multplicative_expression '/' cast_expression
-            { //printinfo("multiplicative_expression -> multiplicative_expression / cast_expression\n"); 
-
-            if (typecheck ($1->loc, $3->array1) ) {
-                        $$ = new expr();
-                        int two = 2;    
-                        int three = 3;
-                        $$->loc = gentemp(new symtype($1->loc->type->type));
-                        emit ("DIVIDE", $$->loc->name, $1->loc->name, $3->array1->name);
-                }
-                else cout << "Type Error"<< endl;
-
+            else
+                $$ = $1;            // copy content from right to left
+        }
+        | multiplicative_expression MUL cast_expression
+        {   
+            // Indicates multiplication
+            // Arithmetic operation requires both the operands to be of compatible type 
+            $$ = new expression();
+            ST_entry* first_operand = ST->search_lexeme($1->location);                      // Get the first operand from the ST_entry table
+            ST_entry* second_operand = ST->search_lexeme($3->location);                     // Get the second operand from the ST_entry table
+            if(second_operand->type.type == ARRAY) {                                        // If the second operand is an array, perform necessary operations 
+            
+            //extract the value stored in array and save it in a temporary variable so that arithmetic operation can be performed
+                
+                string t = ST->generate_tem_var(second_operand->type.next_elem_type);
+                add_TAC(t, $3->location, *($3->store_addr), ARR_R);
+                $3->location = t;
+                $3->type = second_operand->type.next_elem_type;
             }
-            |multplicative_expression '%' cast_expression
-            {// printinfo("multiplicative_expression -> multiplicative_expression %% cast_expression\n"); 
+            if(first_operand->type.type == ARRAY) {                       // If the first operand is an array, perform necessary operations
 
-            if (typecheck ($1->loc, $3->array1) ) {
-                        $$ = new expr();
-                        int two = 2;    
-                        int three = 3;
-                        $$->loc = gentemp(new symtype($1->loc->type->type));
-                        emit ("MODOP", $$->loc->name, $1->loc->name, $3->array1->name);
-                }
-                else cout << "Type Error"<< endl;
-
+                //extract the value stored in array and save it in a temporary variable so that arithmetic operation can be performed
+                string t = ST->generate_tem_var(first_operand->type.next_elem_type);
+                add_TAC(t, $1->location, *($1->store_addr), ARR_R);
+                $1->location = t;
+                $1->type = first_operand->type.next_elem_type;            //next_elem_type keeps the type of elements pointer by pointer or array
             }
-            ;
 
-additive_expression:
-           multplicative_expression
-           { //printinfo("additive_expression -> multiplicative_expression\n"); 
-           $$=$1;
-
-
-           }
-           |additive_expression '+' multplicative_expression
-            { //printinfo("additive_expression -> additive_expression + multiplicative_expression\n"); 
-
-            if (typecheck ($1->loc, $3->loc) ) {
-                        $$ = new expr();
-                        int zero = 0;   
-                        int one = 1;
-                        $$->loc = gentemp(new symtype($1->loc->type->type));
-                        emit ("ADD", $$->loc->name, $1->loc->name, $3->loc->name);
-                }
-                else cout << "Type Error"<< endl;
-
+            // data type of result of the multiplication will depend upon relative precedance of data type of both operands 
+            //assign data type after appropriate typecasting
+            data_dtype final = ((first_operand->type.type > second_operand->type.type) ? (first_operand->type.type) : (second_operand->type.type));
+            $$->location = ST->generate_tem_var(final);                       // Store the final result in a temporary
+            add_TAC($$->location, $1->location, $3->location, MULT);
+        }
+        | multiplicative_expression F_SLASH cast_expression
+        {
+            // Indicates division
+            $$ = new expression();
+            ST_entry* first_operand = ST->search_lexeme($1->location);                  // Get the first operand from the ST_entry table
+            ST_entry* second_operand = ST->search_lexeme($3->location);                  // Get the second operand from the ST_entry table
+            if(second_operand->type.type == ARRAY) {                       // If the second operand is an array, perform necessary operations
+                
+                //extract the value stored in array and save it in a temporary variable so that arithmetic operation can be performed
+                
+                string t = ST->generate_tem_var(second_operand->type.next_elem_type);
+                add_TAC(t, $3->location, *($3->store_addr), ARR_R);
+                $3->location = t;
+                $3->type = second_operand->type.next_elem_type;
             }
-           |additive_expression '-' multplicative_expression
-           { //printinfo("additive_expression -> additive_expression − multiplicative_expression\n"); 
-           if (typecheck ($1->loc, $3->loc) ) {
-                        $$ = new expr();
-                        int zero = 0;   
-                        int one = 1;
-                        $$->loc = gentemp(new symtype($1->loc->type->type));
-                        emit ("SUB", $$->loc->name, $1->loc->name, $3->loc->name);
-                }
-                else cout << "Type Error"<< endl;
+            if(first_operand->type.type == ARRAY) {                       // If the first operand is an array, perform necessary operations
 
+                //extract the value stored in array and save it in a temporary variable so that arithmetic operation can be performed
+                string t = ST->generate_tem_var(first_operand->type.next_elem_type);
+                add_TAC(t, $1->location, *($1->store_addr), ARR_R);
+                $1->location = t;
+                $1->type = first_operand->type.next_elem_type;
+            }
 
-           }
-           ;
+            //assign data type after appropriate typecasting
+            data_dtype final = ((first_operand->type.type > second_operand->type.type) ? (first_operand->type.type) : (second_operand->type.type));
+            $$->location = ST->generate_tem_var(final);                       // Store the final result in a temporary
+            add_TAC($$->location, $1->location, $3->location, DIV);
+        }
+        | multiplicative_expression MODULO cast_expression
+        {
+            // Indicates modulo
+            $$ = new expression();
+            ST_entry* first_operand = ST->search_lexeme($1->location);                  // Get the first operand from the ST_entry table
+            ST_entry* second_operand = ST->search_lexeme($3->location);                  // Get the second operand from the ST_entry table
+            
+            if(second_operand->type.type == ARRAY) {                       // If the second operand is an array, perform necessary operations
+                
+                //extract the value stored in array and save it in a temporary variable so that arithmetic operation can be performed
+                
+                string t = ST->generate_tem_var(second_operand->type.next_elem_type);
+                add_TAC(t, $3->location, *($3->store_addr), ARR_R);
+                $3->location = t;
+                $3->type = second_operand->type.next_elem_type;
+            }
+            
+            if(first_operand->type.type == ARRAY) {                       // If the first operand is an array, perform necessary operations
+                
+                //extract the value stored in array and save it in a temporary variable so that arithmetic operation can be performed
+                string t = ST->generate_tem_var(first_operand->type.next_elem_type);
+                add_TAC(t, $1->location, *($1->store_addr), ARR_R);
+                $1->location = t;
+                $1->type = first_operand->type.next_elem_type;
+            }
 
-shift_expression:
+            // Assign the data type after suitable typecasting
+            data_dtype final = ((first_operand->type.type > second_operand->type.type) ? (first_operand->type.type) : (second_operand->type.type));
+            $$->location = ST->generate_tem_var(final);                       // Store the final result in a temporary
+            add_TAC($$->location, $1->location, $3->location, MOD);
+        }
+        ;
+
+additive_expression: 
+        multiplicative_expression
+        {}
+        | additive_expression PLUS multiplicative_expression
+        {   
+            // Indicates addition
+            $$ = new expression();
+            ST_entry* first_operand = ST->search_lexeme($1->location);                  // Get the first operand from the ST_entry table
+            ST_entry* second_operand = ST->search_lexeme($3->location);                  // Get the second operand from the ST_entry table
+            
+            if(second_operand->type.type == ARRAY) {                       // If the second operand is an array, perform necessary operations
+                
+                //extract the value stored in array and save it in a temporary variable so that arithmetic operation can be performed
+                
+                string t = ST->generate_tem_var(second_operand->type.next_elem_type);
+                add_TAC(t, $3->location, *($3->store_addr), ARR_R);
+                $3->location = t;
+                $3->type = second_operand->type.next_elem_type;
+            }
+            if(first_operand->type.type == ARRAY) {                       // If the first operand is an array, perform necessary operations
+                
+                //extract the value stored in array and save it in a temporary variable so that arithmetic operation can be performed
+                string t = ST->generate_tem_var(first_operand->type.next_elem_type);
+                add_TAC(t, $1->location, *($1->store_addr), ARR_R);
+                $1->location = t;
+                $1->type = first_operand->type.next_elem_type;
+            }
+
+            // Assign the data type after appropriate type casting
+            data_dtype final = ((first_operand->type.type > second_operand->type.type) ? (first_operand->type.type) : (second_operand->type.type));
+            $$->location = ST->generate_tem_var(final);                       // Store the final result in a temporary
+            add_TAC($$->location, $1->location, $3->location, ADD);
+        }
+        | additive_expression SUBTRACT multiplicative_expression
+        {
+            // Indicates subtraction
+            $$ = new expression();
+            ST_entry* first_operand = ST->search_lexeme($1->location);                  // Get the first operand from the ST_entry table
+            ST_entry* second_operand = ST->search_lexeme($3->location);                  // Get the second operand from the ST_entry table
+            if(second_operand->type.type == ARRAY) {                       // If the second operand is an array, perform necessary operations
+                
+                //extract the value stored in array and save it in a temporary variable so that arithmetic operation can be performed
+                
+                string t = ST->generate_tem_var(second_operand->type.next_elem_type);
+                add_TAC(t, $3->location, *($3->store_addr), ARR_R);
+                $3->location = t;
+                $3->type = second_operand->type.next_elem_type;
+            }
+            if(first_operand->type.type == ARRAY) {                       // If the first operand is an array, perform necessary operations
+                
+                //extract the value stored in array and save it in a temporary variable so that arithmetic operation can be performed 
+                string t = ST->generate_tem_var(first_operand->type.next_elem_type);
+                add_TAC(t, $1->location, *($1->store_addr), ARR_R);
+                $1->location = t;
+                $1->type = first_operand->type.next_elem_type;
+            }
+
+            // Assign the data type after appropriate type casting
+            data_dtype final = ((first_operand->type.type > second_operand->type.type) ? (first_operand->type.type) : (second_operand->type.type));
+            $$->location = ST->generate_tem_var(final);                       // Store the final result in a temporary
+            add_TAC($$->location, $1->location, $3->location, SUB);
+        }
+        ;
+
+shift_expression: 
         additive_expression
-        { //printinfo("shift_expression -> additive_expression\n");
-           $$=$1;
-
-        }
-        |shift_expression LSHIFT additive_expression
-        { //printinfo("shift_expression -> shift_expression << additive_expression\n"); 
-        if ($3->loc->type->type == "INTEGER") {
-                        $$ = new expr();
-                        int zero = 0;   
-                        int one = 1;
-                        $$->loc = gentemp (new symtype("INTEGER"));
-                        emit ("LEFTOP", $$->loc->name, $1->loc->name, $3->loc->name);
-                }
-                else cout << "Type Error"<< endl;
-
-        }
-        |shift_expression RSHIFT additive_expression
-        { //printinfo("shift_expression -> shift_expression >> additive_expression\n");
-
-        if ($3->loc->type->type == "INTEGER") {
-                        $$ = new expr();
-                       
-                        int temp= 1;
-                        $$->loc = gentemp (new symtype("INTEGER"));
-                        emit ("RIGHTOP", $$->loc->name, $1->loc->name, $3->loc->name);
-                }
-                else cout << "Type Error"<< endl;
-
-         }
-        ;
-
-relational_expression:
-           shift_expression
-           {// printinfo("relational_expression -> shift_expression\n"); 
-           $$=$1;
-
-           }
-           |relational_expression '<' shift_expression
-           { //printinfo("relational_expression -> relational_expression < shift_expression\n"); 
-           if (typecheck ($1->loc, $3->loc) ) {
-                        $$ = new expr();
-                        $$->type = "BOOL";
-                          
-                        int temp = 1;
-                        $$->truelist = makelist (nextinstr());
-                        $$->falselist = makelist (nextinstr()+1);
-                        emit("LT", "", $1->loc->name, $3->loc->name);
-                        emit ("GOTOOP", "");
-                }
-                else cout << "Type Error"<< endl;
-           }
-           |relational_expression '>' shift_expression
-            { //printinfo("relational_expression -> relational_expression > shift_expression\n"); 
-
-                if (typecheck ($1->loc, $3->loc) ) {
-                        $$ = new expr();
-                        $$->type = "BOOL";
-
-                        int zero = 0;   
-                        int one = 1;
-                        $$->truelist = makelist (nextinstr());
-                        $$->falselist = makelist (nextinstr()+1);
-                        emit("GT", "", $1->loc->name, $3->loc->name);
-                        emit ("GOTOOP", "");
-                }
-                else cout << "Type Error"<< endl;
-
+        {}
+        | shift_expression LEFT_SHIFT additive_expression
+        {
+            // Indicates left shift
+            $$ = new expression();
+            ST_entry* first_operand = ST->search_lexeme($1->location);                  // Get the first operand from the ST_entry table
+            ST_entry* second_operand = ST->search_lexeme($3->location);                  // Get the second operand from the ST_entry table
+            if(second_operand->type.type == ARRAY) {                       // If the second operand is an array, perform necessary operations
+                
+                   //extract the value stored in array and save it in a temporary variable so that arithmetic operation can be performed 
+                
+                string t = ST->generate_tem_var(second_operand->type.next_elem_type);
+                add_TAC(t, $3->location, *($3->store_addr), ARR_R);
+                $3->location = t;
+                $3->type = second_operand->type.next_elem_type;
             }
-           |relational_expression LESS_THAN_EQUAL_TO shift_expression
-            { //printinfo("relational_expression -> relational_expression <= shift_expression\n");
-                if (typecheck ($1->loc, $3->loc) ) {
-                        $$ = new expr();
-                        $$->type = "BOOL";
-                           
-                        int temp = 1;
-                        $$->truelist = makelist (nextinstr());
-                        $$->falselist = makelist (nextinstr()+1);
-                        emit("LE", "", $1->loc->name, $3->loc->name);
-                        emit ("GOTOOP", "");
-                }
-                else cout << "Type Error"<< endl;
+            if(first_operand->type.type == ARRAY) {                       // If the first operand is an array, perform necessary operations
 
-             }
-           |relational_expression GREATER_THAN_EQUAL_TO shift_expression
-           { //printinfo("relational_expression -> relational_expression >= shift_expression\n");
-           if (typecheck ($1->loc, $3->loc) ) {
-                        $$ = new expr();
-                        $$->type = "BOOL";
-                     
-                        int temp = 1;
-                        $$->truelist = makelist (nextinstr());
-                        $$->falselist = makelist (nextinstr()+1);
-                        emit("GE", "", $1->loc->name, $3->loc->name);
-                        emit ("GOTOOP", "");
-                }
-                else cout << "Type Error"<< endl;
-
+                   //extract the value stored in array and save it in a temporary variable so that arithmetic operation can be performed 
+                string t = ST->generate_tem_var(first_operand->type.next_elem_type);
+                add_TAC(t, $1->location, *($1->store_addr), ARR_R);
+                $1->location = t;
+                $1->type = first_operand->type.next_elem_type;
             }
-           ;
-
-equality_expression:
-           relational_expression
-           { //printinfo("equality_expression -> relational_expression\n"); 
-
-           $$=$1;
-
-           }
-           |equality_expression DOUBLE_EQUAL relational_expression
-           { //printinfo("equality_expression -> equality_expression == relational_expression\n"); 
-
-           if (typecheck ($1->loc, $3->loc)) {
-                        convertBool2Int ($1);
-                        convertBool2Int ($3);
-
-                        $$ = new expr();
-                        $$->type = "BOOL";
-                         
-                        int temp = 1;
-                        $$->truelist = makelist (nextinstr());
-                        $$->falselist = makelist (nextinstr()+1);
-                        emit("EQOP", "", $1->loc->name, $3->loc->name);
-                        emit ("GOTOOP", "");
-                }
-                else cout << "Type Error"<< endl;
-
-           }
-           |relational_expression NOT_EQUAL relational_expression
-           { //printinfo("equality_expression -> equality_expression ! = relational_expression\n"); 
-
-           if (typecheck ($1->loc, $3->loc) ) {
-                        // If any is bool get its value
-                        convertBool2Int ($1);
-                        convertBool2Int ($3);
-
-                        $$ = new expr();
-                        $$->type = "BOOL";
-                         
-                        int temp = 1;
-                        $$->truelist = makelist (nextinstr());
-                        $$->falselist = makelist (nextinstr()+1);
-                        emit("NEOP", "", $1->loc->name, $3->loc->name);
-                        emit ("GOTOOP", "");
-                }
-                else cout << "Type Error"<< endl;
-
-
-           }
-           ;
-
-AND_expression:
-        equality_expression
-        { //printinfo("AND_expression -> equality_expression\n"); 
-        $$=$1;
-
+            $$->location = ST->generate_tem_var(first_operand->type.type);              // data type remains the same after shifting
+            add_TAC($$->location, $1->location, $3->location, SL);
         }
-        |AND_expression '&' equality_expression
-        { //printinfo("AND_expression -> AND_expression & equality_expression\n");
-
-        if (typecheck ($1->loc, $3->loc) ) {
-                        // If any is bool get its value
-                        convertBool2Int ($1);
-                        convertBool2Int ($3);
-                         
-                        int temp = 1;
-                        $$ = new expr();
-                        $$->type = "NONBOOL";
-
-                        $$->loc = gentemp (new symtype("INTEGER"));
-                        emit ("BAND", $$->loc->name, $1->loc->name, $3->loc->name);
-                }
-                else cout << "Type Error"<< endl;
-
+        | shift_expression RIGHT_SHIFT additive_expression
+        {
+            // Indicates right shift
+            $$ = new expression();
+            ST_entry* first_operand = ST->search_lexeme($1->location);                  // Get the first operand from the ST_entry table
+            ST_entry* second_operand = ST->search_lexeme($3->location);                  // Get the second operand from the ST_entry table
+            
+            if(second_operand->type.type == ARRAY) {                       // If the second operand is an array, perform necessary operations
+                
+                   //extract the value stored in array and save it in a temporary variable so that arithmetic operation can be performed 
+                
+                string t = ST->generate_tem_var(second_operand->type.next_elem_type);
+                add_TAC(t, $3->location, *($3->store_addr), ARR_R);
+                $3->location = t;
+                $3->type = second_operand->type.next_elem_type;
+            }
+            if(first_operand->type.type == ARRAY) {                       // If the first operand is an array, perform necessary operations
+                
+                   //extract the value stored in array and save it in a temporary variable so that arithmetic operation can be performed 
+                string t = ST->generate_tem_var(first_operand->type.next_elem_type);
+                add_TAC(t, $1->location, *($1->store_addr), ARR_R);
+                $1->location = t;
+                $1->type = first_operand->type.next_elem_type;
+            }
+            $$->location = ST->generate_tem_var(first_operand->type.type);              //data type remains the same after right shift
+            add_TAC($$->location, $1->location, $3->location, SR);
         }
         ;
+/*
 
-exclusive_OR_expression:
-             AND_expression
-             { //printinfo("exclusive_OR_expression -> AND_expression\n");
-             $$=$1;
+next set of instructions involve boolean expressions. 
+boolean expressions have attributes truelist and falselist which will be backpatched later
+*/
 
-              }
-             |exclusive_OR_expression '^' AND_expression
-             { //printinfo("exclusive_OR_expression -> exclusive_OR_expression ˆ AND_expression\n");
-
-             if (typecheck ($1->loc, $3->loc) ) {
-                        // If any is bool get its value
-                        convertBool2Int ($1);
-                        convertBool2Int ($3);
-                        
-                        int temp = 1;
-                        $$ = new expr();
-                        $$->type = "NONBOOL";
-
-                        $$->loc = gentemp (new symtype("INTEGER"));
-                        emit ("XOR", $$->loc->name, $1->loc->name, $3->loc->name);
-                }
-                else cout << "Type Error"<< endl;
-
-              }
-             ;
-
-inclusive_OR_expression:
-             exclusive_OR_expression
-             { //printinfo("inclusive_OR_expression -> exclusive_OR_expression\n"); 
-
-             $$=$1;
-
-             }
-             |inclusive_OR_expression '|' exclusive_OR_expression
-             { //printinfo("inclusive_OR_expression -> inclusive_OR_expression | exclusive_OR_expression\n"); 
-
-             if (typecheck ($1->loc, $3->loc) ) {
-                        // If any is bool get its value
-                        convertBool2Int ($1);
-                        convertBool2Int ($3);
-  
-                        int temp = 1;
-                        $$ = new expr();
-                        $$->type = "NONBOOL";
-
-                        $$->loc = gentemp (new symtype("INTEGER"));
-                        emit ("INOR", $$->loc->name, $1->loc->name, $3->loc->name);
-                }
-                else cout << "Type Error"<< endl;
-
-             }
-             ;
-
-logical_AND_expression:
-            inclusive_OR_expression
-            { //printinfo("logical_AND_expression -> inclusive_OR_expression\n");
-            $$=$1;
-
-             }
-            |logical_AND_expression N BINARY_AND M inclusive_OR_expression
-             { //printinfo("logical_AND_expression -> logical_AND_expression && inclusive_OR_expression\n"); 
-
-             convertInt2Bool($5);
-
-                // convert $1 to bool and backpatch using N
-                backpatch($2->nextlist, nextinstr());
-                convertInt2Bool($1);
-                   
-                int temp = 1;
-                $$ = new expr();
-                $$->type = "BOOL";
-
-                backpatch($1->truelist, $4);
-                $$->truelist = $5->truelist;
-                $$->falselist = merge ($1->falselist, $5->falselist);
-
-             }
-            ;
-
-logical_OR_expression:
-           logical_AND_expression
-           { //printinfo("logical_OR_expression -> logical_AND_expression\n");
-           $$=$1;
-
+relational_expression: 
+        shift_expression
+        {}
+        | relational_expression LESS_THAN shift_expression
+        {
+            $$ = new expression();
+            ST_entry* first_operand = ST->search_lexeme($1->location);                      // Get the first operand from the ST_entry table
+            ST_entry* second_operand = ST->search_lexeme($3->location);                     // Get the second operand from the ST_entry table
+            if(second_operand->type.type == ARRAY) {                                        // If the second operand is an array, perform necessary operations
+                
+                //extract the value stored in array and save it in a temporary variable so that arithmetic operation can be performed 
+                
+                string t = ST->generate_tem_var(second_operand->type.next_elem_type);
+                add_TAC(t, $3->location, *($3->store_addr), ARR_R);
+                $3->location = t;
+                $3->type = second_operand->type.next_elem_type;
             }
-           |logical_OR_expression N BINARY_OR M logical_AND_expression
-            { //printinfo("logical_OR_expression -> logical_OR_expression || logical_AND_expression\n");
-            convertInt2Bool($5);
-
-                // convert $1 to bool and backpatch using N
-                backpatch($2->nextlist, nextinstr());
-                convertInt2Bool($1);
-  
-                int temp = 1;
-                $$ = new expr();
-                $$->type = "BOOL";
-
-                backpatch ($$->falselist, $4);
-                $$->truelist = merge ($1->truelist, $5->truelist);
-                $$->falselist = $5->falselist; 
-
-            }
-           ;
-
-
-M       : %empty{       // To store the address of thenext instruction
-          $$ = nextinstr();
-        };
-
-N       : %empty {      // gaurd against fallthrough by emitting a goto
-                $$  = new statement();
-                $$->nextlist = makelist(nextinstr());
-                emit ("GOTOOP","");
-        }
-
-conditional_expression:
-            logical_OR_expression
-            { //printinfo("conditional_expression -> logical_OR_expression\n"); 
-            $$=$1;
-
-            }
-            |logical_OR_expression N '?' M expression N ':' M conditional_expression
-            { //printinfo("conditional_expression -> logical_OR_expression ? expression : conditional_expression\n"); 
-            $$->loc = gentemp($5->loc->type);
-                $$->loc->update($5->loc->type);
-                emit("EQUAL", $$->loc->name, $9->loc->name);
-                list<int> l = makelist(nextinstr());
-                emit ("GOTOOP", "");
-                int zero = 0;   
-                int one = 1;
-                backpatch($6->nextlist, nextinstr());
-                emit("EQUAL", $$->loc->name, $5->loc->name);
-                list<int> m = makelist(nextinstr());
-                l = merge (l, m);
-                emit ("GOTOOP", "");
-                int two = 2;    
-                int three = 3;
-                backpatch($2->nextlist, nextinstr());
-                convertInt2Bool($1);
-                backpatch ($1->truelist, $4);
-                backpatch ($1->falselist, $8);
-                backpatch (l, nextinstr());
-
-            }
-            ;
-
-assignment_expression:
-           conditional_expression
-           { //printinfo("assignment_expression -> conditional_expression\n");
-                $$=$1;
-
-            }
-           |unary_expression assignment_operator assignment_expression
-            { //printinfo("assignment_expression -> unary_expression assignment_operator assignment_expression\n"); 
-            if($1->cat=="ARR") {
-                        $3->loc = conv($3->loc, $1->type->type);
-   
-                        int temp = 1;
-                        emit("ARRL", $1->array1->name, $1->loc->name, $3->loc->name);   
-                        }
-                else if($1->cat=="PTR") {
-                        emit("PTRL", $1->array1->name, $3->loc->name);  
-                        }
-                else{
-                        $3->loc = conv($3->loc, $1->array1->type->type);
-                        emit("EQUAL", $1->array1->name, $3->loc->name);
-                        }
-                $$ = $3;
-
-            }
-           ;
-
-assignment_expression_optional:
-             assignment_expression
-             |
-             ;
-
-assignment_operator:
-           '='
-           { //printinfo("assignment_operator -> =\n"); 
-           }
-           |MUL_ASSIGN
-           {// printinfo("assignment_operator -> *=\n");
-            }
-           |DIV_ASSIGN
-           { //printinfo("assignment_operator -> /=\n");
-            }
-           |MOD_ASSIGN
-           { //printinfo("assignment_operator -> %%=\n");
-            }
-           |ADD_ASSIGN
-           { //printinfo("assignment_operator -> +=\n"); 
-           }
-           |SUB_ASSIGN
-           { //printinfo("assignment_operator -> -=\n"); 
-           }
-           |LSHIFT_ASSIGN
-           { //printinfo("assignment_operator -> <<=\n"); 
-           }
-           |RSHIFT_ASSIGN
-           {// printinfo("assignment_operator -> >>=\n"); 
-           }
-           |AND_ASSIGN
-           { //printinfo("assignment_operator -> &=\n"); 
-           }
-           |XOR_ASSIGN
-            { //printinfo("assignment_operator -> ^=\n"); 
-            }
-           |OR_ASSIGN
-           { //printinfo("assignment_operator -> |=\n"); 
-           }
-           ;             
-
-expression:
-      assignment_expression
-      { //printinfo("expression -> assignment_expression\n"); 
-      }
-      |expression ',' assignment_expression
-      { //printinfo("expression -> expression , assignment_expression\n"); 
-      }
-      ;
-       
-constant_expression:
-           conditional_expression
-           { //printinfo("constant_expression -> conditional_expression\n"); 
-           }
-           ;
-
-expression_optional:
-        expression
-        |
-        ;
-
-declaration:
-       declaration_specifiers init_declarator_list_optional ';'
-       { //printinfo("declaration -> declaration_specifiers init_declarator_list_opt ;\n"); 
-       }
-       ;
-
-declaration_specifiers:
-            storage_class_specifier declaration_specifiers_optional
-            { //printinfo("declaration_specifiers -> storage_class_specifier declaration_specifiers_opt\n"); 
-            }
-            |type_specifier declaration_specifiers_optional
-            { //printinfo("declaration_specifiers -> type_specifier declaration_specifiers_opt\n"); 
-            }
-            |type_qualifier declaration_specifiers_optional
-            { //printinfo("declaration_specifiers -> type_qualifier declaration_specifiers_opt\n"); 
-            }
-            |function_specifier declaration_specifiers_optional
-            { //printinfo("declaration_specifiers -> function_specifier declaration_specifiers_opt\n");
-             }
-            ;
-
-declaration_specifiers_optional:
-              declaration_specifiers
-              |
-              ;
-
-init_declarator_list_optional:
-            init_declarator_list
-            |
-            ;
-
-init_declarator_list:
-        init_declarator 
-        { //printinfo("init_declarator_list -> init_declarator\n"); 
-        }
-        |init_declarator_list ',' init_declarator
-        { //printinfo("init_declarator_list -> init_declarator_list , init_declarator\n"); 
-        }
-        ;
-
-init_declarator:
-         declarator
-         { //printinfo("init_declarator -> declarator\n");
-         $$=$1;
-
-          }
-         |declarator '=' initializer
-         { //printinfo("init_declarator -> declarator = initializer\n");
-         if ($3->initial_value!="") $1->initial_value=$3->initial_value;
-                emit ("EQUAL", $1->name, $3->name);
-
-          }
-         ;
-
-storage_class_specifier:
-             EXTERN
-             { //printinfo("storage_class_specifier -> extern\n"); 
-             }
-             |STATIC
-             { //printinfo("storage_class_specifier -> static\n"); 
-             }
-             |AUTO
-             { //printinfo("storage_class_specifier -> auto\n"); 
-             }
-             |REGISTER
-             { //printinfo("storage_class_specifier -> register\n"); 
-             }
-             ;
-
-type_specifier:
-        VOID
-        { //printinfo("type_specifier -> void\n"); 
-        Type="VOID";
-
-        }
-        |CHAR
-        { //printinfo("type_specifier -> char\n");
-        Type="CHAR";
-
-         }
-        |SHORT
-        {// printinfo("type_specifier -> short\n"); 
-        }
-        |INT
-        { //printinfo("type_specifier -> int\n"); 
-        Type="INTEGER";
-
-        }
-        |LONG
-        {// printinfo("type_specifier -> long\n"); 
-        }
-        |FLOAT
-        { //printinfo("type_specifier -> float\n");
-         }
-        |DOUBLE
-        { //printinfo("type_specifier -> float\n"); 
-
-        Type="DOUBLE";
-
-        }
-        |SIGNED
-        { //printinfo("type_specifier -> signed\n");
-         }
-        |UNSIGNED
-        { //printinfo("type_specifier -> unsigned\n"); 
-        }
-        |BOOL
-        { //printinfo("type_specifier -> bool\n");
-         }
-        |COMPLEX
-        { //printinfo("type_specifier -> complex\n"); 
-        }
-        |IMAGINARY
-        { //printinfo("type_specifier -> imaginary\n");
-         }
-        |enum_specifier
-        { //printinfo("type_specifier -> enum_specifier\n"); 
-        }
-        ;
-
-specifier_qualifier_list:
-            type_specifier specifier_qualifier_list_optional
-            { //printinfo("specifier_qualifier_list -> type_specifier specifier_qualifier_list_opt\n");
-             }
-            |type_qualifier specifier_qualifier_list_optional
-            { //printinfo("specifier_qualifier_list -> type_qualifier specifier_qualifier_list_opt\n"); 
-            }
-            ;
-
-specifier_qualifier_list_optional:
-              specifier_qualifier_list
-              |
-              ;
-
-enum_specifier:
-        ENUM identifier_optional '{' enumerator_list '}'
-        |ENUM identifier_optional '{' enumerator_list ',' '}'
-        |ENUM IDENTIFIER
-        ;
-
-enumerator_list:
-         ENUM
-         |enumerator_list ',' enumerator
-         ;
-
-enumerator:
-      IDENTIFIER
-      |IDENTIFIER '=' constant_expression
-      ;
-
-type_qualifier:
-        CONST
-        { //printinfo("type_qualifier -> const\n"); 
-        }
-        |RESTRICT
-        { //printinfo("type_qualifier -> restrict\n");
-         }
-        |VOLATILE
-        { //printinfo("type_qualifier -> volatile\n"); 
-        }
-        ;
-
-function_specifier:
-          INLINE
-          { //printinfo("function_specifier -> inline\n"); 
-          }
-          ;
-
-declarator:
-      pointer direct_declarator
-      { //printinfo("declarator -> pointer_opt direct_declarator\n"); 
-
-      symtype * t = $1;
-                int zero = 0;   
-                int one = 1;
-                while (t->ptr !=NULL) t = t->ptr;
-                t->ptr = $2->type;
-                $$ = $2->update($1);
-
-      }
-      |direct_declarator {
-        }
-      ;
-
-direct_declarator:
-           IDENTIFIER
-           { //printinfo("direct_declarator -> identifier\n"); 
-           $$ = $1->update(new symtype(Type));
-                currSymbol = $$;
-  
-                int temp = 1;
-
-           }
-           |'(' declarator ')'
-           { //printinfo("direct_declarator -> ( declarator )\n");
-
-                $$=$2;
-
-            }
-           | direct_declarator '[' type_qualifier_list assignment_expression ']' {
-                }
-        | direct_declarator '[' type_qualifier_list ']' {
-                }
-           |direct_declarator '[' assignment_expression ']' {
-                symtype * t = $1 -> type;
-                symtype * prev = NULL;
-                int zero = 0;   
-                int one = 1;
-                while (t->type == "ARR") {
-                        prev = t;
-                        t = t->ptr;
-                }
-                if (prev==NULL) {
-                        int temp = atoi($3->loc->initial_value.c_str());
-                        symtype* s = new symtype("ARR", $1->type, temp);
-   
-                      
-                        $$ = $1->update(s);
-                }
-                else {
-                        prev->ptr =  new symtype("ARR", t, atoi($3->loc->initial_value.c_str()));
-  
-                        int temp = 1;
-                        $$ = $1->update ($1->type);
-                }
-        }
-        | direct_declarator '[' ']' {
-                symtype * t = $1 -> type;
-                symtype * prev = NULL;
-                int zero = 0;   
-                int one = 1;
-                while (t->type == "ARR") {
-                        prev = t;
-                        t = t->ptr;
-                }
-                if (prev==NULL) {
-                        symtype* s = new symtype("ARR", $1->type, 0);
-                        int zero = 0;   
-                        int one = 1;
-                        $$ = $1->update(s);
-                }
-                else {
-                        prev->ptr =  new symtype("ARR", t, 0);
-   
-                int tmep = 1;
-                        $$ = $1->update ($1->type);
-                }
-        }
-        | direct_declarator '[' STATIC type_qualifier_list assignment_expression ']' {
-       
-        }
-        | direct_declarator '[' STATIC assignment_expression ']' {
-        }
-        | direct_declarator '[' type_qualifier_list '*' ']' {
-        }
-        | direct_declarator '[' '*' ']' {
-        }
-        | direct_declarator '(' CT parameter_type_list ')' {
-                currTable->name = $1->name;
-                int zero = 0;   
-                int one = 1;
-                if ($1->type->type !="VOID") {
-                        sym *s = currTable->lookup("return");
-                        int three = 3;  
-                        int four = 4;
-                        s->update($1->type);            
-                }
-                $1->nested=currTable;
-
-                currTable->parent = globalTable;
-                changeTable (globalTable);                              // Come back to globalsymbol currTable
-                currSymbol = $$;
-        }
-        | direct_declarator '(' identifier_list ')' {//later
-   
-        int one = 1;
-        }
-        | direct_declarator '(' CT ')' {
-                currTable->name = $1->name;
-   
-                int temp = 1;    
-                if ($1->type->type !="VOID") {  
-                        sym *s = currTable->lookup("return");
-                        int three = 0;  
-                        int four = 1;
-                        s->update($1->type);            
-                }
-                $1->nested=currTable;
-
-                currTable->parent = globalTable;
-                changeTable (globalTable);                              // Come back to globalsymbol currTable
-                currSymbol = $$;
-        }
-        ;
-        
-CT
-        : %empty {                                                                                                      // Used for changing to symbol currTable for a function
-                if (currSymbol->nested==NULL) changeTable(new symtable(""));    // Function symbol currTable doesn't already exist
-                else {
-                        changeTable (currSymbol ->nested);                                              // Function symbol currTable already exists
-                        emit ("LABEL", currTable->name);
-                }
-        }
-        ;
-
            
-
-pointer:
+            if(first_operand->type.type == ARRAY) {                       // If the first operand is an array, perform necessary operations
+                
+                   //extract the value stored in array and save it in a temporary variable so that arithmetic operation can be performed 
+                string t = ST->generate_tem_var(first_operand->type.next_elem_type);
+                add_TAC(t, $1->location, *($1->store_addr), ARR_R);
+                $1->location = t;
+                $1->type = first_operand->type.next_elem_type;
+            }
+            $$ = new expression();
+            $$->location = ST->generate_tem_var();
+            $$->type = BOOL;                                    // Assign the result of the relational expression to a boolean type
+            add_TAC($$->location, "1", "", ASSIGN);
+            
+            $$->truelist = makelist(next_instruction);                 //backpatching
+            add_TAC("", $1->location, $3->location, GOTO_LT);               
+            add_TAC($$->location, "0", "", ASSIGN);
+            $$->falselist = makelist(next_instruction);                //backpatching
+            add_TAC("", "", "", GOTO);                            
+            /*
+                in: $$ = 1
+                in+1: if $1 < $3 goto (to be backpatched) i.e. $$ will stay 1 and we will jump to truelist
+                in+2: $$ = 0                            else $$ set to 0 and we jump to falselist
+                in+3: goto (to be backpatched)
+            */
         
-        '*' type_qualifier_list {
+        
         }
-        |'*' {
-                $$ = new symtype("PTR");
+        | relational_expression GREATER_THAN shift_expression
+        {
+            $$ = new expression();
+            ST_entry* first_operand = ST->search_lexeme($1->location);                  // Get the first operand from the ST_entry table
+            ST_entry* second_operand = ST->search_lexeme($3->location);                  // Get the second operand from the ST_entry table
+            if(second_operand->type.type == ARRAY) {                                      // If the second operand is an array, perform necessary operations
+                
+                //extract the value stored in array and save it in a temporary variable so that arithmetic operation can be performed
+                string t = ST->generate_tem_var(second_operand->type.next_elem_type);
+                add_TAC(t, $3->location, *($3->store_addr), ARR_R);
+                $3->location = t;
+                $3->type = second_operand->type.next_elem_type;
+            }
+            if(first_operand->type.type == ARRAY) {                       // If the first operand is an array, perform necessary operations
+                
+                //extract the value stored in array and save it in a temporary variable so that arithmetic operation can be performed
+                string t = ST->generate_tem_var(first_operand->type.next_elem_type);
+                add_TAC(t, $1->location, *($1->store_addr), ARR_R);
+                $1->location = t;
+                $1->type = first_operand->type.next_elem_type;
+            }
+            $$ = new expression();
+            $$->location = ST->generate_tem_var();
+            $$->type = BOOL;                                    // Assign the result of the relational expression to a boolean
+            add_TAC($$->location, "1", "", ASSIGN);
+            $$->truelist = makelist(next_instruction);                 // backpatching
+            add_TAC("", $1->location, $3->location, GOTO_GT);               
+            add_TAC($$->location, "0", "", ASSIGN);
+            $$->falselist = makelist(next_instruction);                //backpatching
+            add_TAC("", "", "", GOTO);                             
+
+            /*
+                in: $$ = 1
+                in+1: if $1 > $3 goto (to be backpatched) i.e. $$ will stay 1 and we will jump to truelist
+                in+2: $$ = 0                            else $$ set to 0 and we jump to falselist
+                in+3: goto (to be backpatched)
+            */
         }
-        |'*' type_qualifier_list {//later
+        | relational_expression LESS_THAN_EQUAL shift_expression
+        {
+            $$ = new expression();
+            ST_entry* first_operand = ST->search_lexeme($1->location);                  // Get the first operand from the ST_entry table
+            ST_entry* second_operand = ST->search_lexeme($3->location);                  // Get the second operand from the ST_entry table
+            if(second_operand->type.type == ARRAY) {                       // If the second operand is an array, perform necessary operations
+                
+                //extract the value stored in array and save it in a temporary variable so that arithmetic operation can be performed 
+                string t = ST->generate_tem_var(second_operand->type.next_elem_type);
+                add_TAC(t, $3->location, *($3->store_addr), ARR_R);
+                $3->location = t;
+                $3->type = second_operand->type.next_elem_type;
+            }
+            if(first_operand->type.type == ARRAY) {                       // If the first operand is an array, perform necessary operations
+                
+                //extract the value stored in array and save it in a temporary variable so that arithmetic operation can be performed 
+                string t = ST->generate_tem_var(first_operand->type.next_elem_type);
+                add_TAC(t, $1->location, *($1->store_addr), ARR_R);
+                $1->location = t;
+                $1->type = first_operand->type.next_elem_type;
+            }
+            $$ = new expression();
+            $$->location = ST->generate_tem_var();
+            $$->type = BOOL;                                    // Assign the result of the relational expression to a boolean
+            add_TAC($$->location, "1", "", ASSIGN);
+            $$->truelist = makelist(next_instruction);                 // backpatching
+            add_TAC("", $1->location, $3->location, GOTO_LTE);               // Emit "if x <= y goto ..."
+            add_TAC($$->location, "0", "", ASSIGN);
+            $$->falselist = makelist(next_instruction);                //backpatching
+            add_TAC("", "", "", GOTO);                             
+             /*
+                in: $$ = 1
+                in+1: if $1 <= $3 goto (to be backpatched) i.e. $$ will stay 1 and we will jump to truelist
+                in+2: $$ = 0                            else $$ set to 0 and we jump to falselist
+                in+3: goto (to be backpatched)
+            */
+        
+        
         }
-        |'*' pointer {
-                $$ = new symtype("PTR", $2);
+        | relational_expression GREATER_THAN_EQUAL shift_expression
+        {
+            $$ = new expression();
+            ST_entry* first_operand = ST->search_lexeme($1->location);                  // Get the first operand from the ST_entry table
+            ST_entry* second_operand = ST->search_lexeme($3->location);                  // Get the second operand from the ST_entry table
+            if(second_operand->type.type == ARRAY) {                       // If the second operand is an array, perform necessary operations
+                
+                //extract the value stored in array and save it in a temporary variable so that arithmetic operation can be performed 
+                string t = ST->generate_tem_var(second_operand->type.next_elem_type);
+                add_TAC(t, $3->location, *($3->store_addr), ARR_R);
+                $3->location = t;
+                $3->type = second_operand->type.next_elem_type;
+            }
+            if(first_operand->type.type == ARRAY) {                       // If the first operand is an array, perform necessary operations
+                
+                //extract the value stored in array and save it in a temporary variable so that arithmetic operation can be performed 
+                string t = ST->generate_tem_var(first_operand->type.next_elem_type);
+                add_TAC(t, $1->location, *($1->store_addr), ARR_R);
+                $1->location = t;
+                $1->type = first_operand->type.next_elem_type;
+            }
+            $$ = new expression();
+            $$->location = ST->generate_tem_var();
+            $$->type = BOOL;                                    // Assign the result of the relational expression to a boolean
+            add_TAC($$->location, "1", "", ASSIGN);
+            $$->truelist = makelist(next_instruction);                 // backpatching
+            add_TAC("", $1->location, $3->location, GOTO_GTE);               // Emit "if x >= y goto ..."
+            add_TAC($$->location, "0", "", ASSIGN);
+            $$->falselist = makelist(next_instruction);                //backpatching
+            add_TAC("", "", "", GOTO);                             
+             /*
+                in: $$ = 1
+                in+1: if $1 >= $3 goto (to be backpatched) i.e. $$ will stay 1 and we will jump to truelist
+                in+2: $$ = 0                            else $$ set to 0 and we jump to falselist
+                in+3: goto (to be backpatched)
+            */
+        
         }
         ;
-     
-pointer_optional:
-       pointer
-       |
-       ;
 
-type_qualifier_list:
-           type_qualifier
-           { //printinfo("type_qualifier_list -> type_qualifier\n"); 
-           }
-           |type_qualifier_list type_qualifier
-           { //printinfo("type_qualifier_list -> type_qualifier_list type_qualifier\n"); 
-           }
-           ;
+equality_expression: 
+        relational_expression
+        {
+            $$ = new expression();
+            $$ = $1;                // copy content from right to left
+        }
+        | equality_expression EQUAL relational_expression
+        {
+            $$ = new expression();
+            ST_entry* first_operand = ST->search_lexeme($1->location);                  // Get the first operand from the ST_entry table
+            ST_entry* second_operand = ST->search_lexeme($3->location);                  // Get the second operand from the ST_entry table
+            if(second_operand->type.type == ARRAY) {                       // If the second operand is an array, perform necessary operations
+                
+                //extract the value stored in array and save it in a temporary variable so that arithmetic operation can be performed 
+                string t = ST->generate_tem_var(second_operand->type.next_elem_type);
+                add_TAC(t, $3->location, *($3->store_addr), ARR_R);
+                $3->location = t;
+                $3->type = second_operand->type.next_elem_type;
+            }
+            if(first_operand->type.type == ARRAY) {                       // If the first operand is an array, perform necessary operations
+                
+                //extract the value stored in array and save it in a temporary variable so that arithmetic operation can be performed 
+                string t = ST->generate_tem_var(first_operand->type.next_elem_type);
+                add_TAC(t, $1->location, *($1->store_addr), ARR_R);
+                $1->location = t;
+                $1->type = first_operand->type.next_elem_type;
+            }
+            $$ = new expression();
+            $$->location = ST->generate_tem_var();
+            $$->type = BOOL;                                    // Assign the result of the relational expression to a boolean
+            add_TAC($$->location, "1", "", ASSIGN);
+            $$->truelist = makelist(next_instruction);                 // backpatching
+            add_TAC("", $1->location, $3->location, GOTO_EQ);                
+            add_TAC($$->location, "0", "", ASSIGN);
+            $$->falselist = makelist(next_instruction);                //backpatching
+            add_TAC("", "", "", GOTO);                             
+            /*
+                in: $$ = 1
+                in+1: if $1 == $3 goto (to be backpatched) i.e. $$ will stay 1 and we will jump to truelist
+                in+2: $$ = 0                            else $$ set to 0 and we jump to falselist
+                in+3: goto (to be backpatched)
+            */
+        
+        }
+        | equality_expression NOT_EQUAL relational_expression
+        {
+            $$ = new expression();
+            ST_entry* first_operand = ST->search_lexeme($1->location);                  // Get the first operand from the ST_entry table
+            ST_entry* second_operand = ST->search_lexeme($3->location);                  // Get the second operand from the ST_entry table
+            if(second_operand->type.type == ARRAY) {                       // If the second operand is an array, perform necessary operations
+                
+                //extract the value stored in array and save it in a temporary variable so that arithmetic operation can be performed 
+                string t = ST->generate_tem_var(second_operand->type.next_elem_type);
+                add_TAC(t, $3->location, *($3->store_addr), ARR_R);
+                $3->location = t;
+                $3->type = second_operand->type.next_elem_type;
+            }
+            if(first_operand->type.type == ARRAY) {                       // If the first operand is an array, perform necessary operations
+                
+                //extract the value stored in array and save it in a temporary variable so that arithmetic operation can be performed 
+                string t = ST->generate_tem_var(first_operand->type.next_elem_type);
+                add_TAC(t, $1->location, *($1->store_addr), ARR_R);
+                $1->location = t;
+                $1->type = first_operand->type.next_elem_type;
+            }
+            $$ = new expression();
+            $$->location = ST->generate_tem_var();
+            $$->type = BOOL;                                    // Assign the result of the relational expression to a boolean
+            add_TAC($$->location, "1", "", ASSIGN);
+            $$->truelist = makelist(next_instruction);                 // backpatching
+            add_TAC("", $1->location, $3->location, GOTO_NEQ);               
+            add_TAC($$->location, "0", "", ASSIGN);
+            $$->falselist = makelist(next_instruction);                //backpatching
+            add_TAC("", "", "", GOTO);                             
+            /*
+                in: $$ = 1
+                in+1: if $1 != $3 goto (to be backpatched) i.e. $$ will stay 1 and we will jump to truelist
+                in+2: $$ = 0                            else $$ set to 0 and we jump to falselist
+                in+3: goto (to be backpatched)
+            */
+        }
+        ;
 
-type_qualifier_list_optional:
-             type_qualifier_list
-             |
-             ;
+/*
+the next set of translations involve converting expressions to int/non-boolean type,
+thus, truelist and falselist attributes now become invalid
+a new temporary variable is generated to store the result of the intermediate operations
+*/
 
-parameter_type_list:
-           parameter_list
-           {// printinfo("parameter_type_list -> parameter_list\n"); 
-           }
-           |parameter_list ',' ELLIPSIS
-           {// printinfo("parameter_type_list -> parameter_list , ...\n"); 
-           }
-           ;
+and_expression: 
+        equality_expression
+        {}
+        | and_expression BITWISE_AND equality_expression
+        {
+            $$ = new expression();
+            ST_entry* first_operand = ST->search_lexeme($1->location);                  // Get the first operand from the ST_entry table
+            ST_entry* second_operand = ST->search_lexeme($3->location);                  // Get the second operand from the ST_entry table
+            if(second_operand->type.type == ARRAY) {                       // If the second operand is an array, perform necessary operations
+                
+                //extract the value stored in array and save it in a temporary variable so that arithmetic operation can be performed 
+                string t = ST->generate_tem_var(second_operand->type.next_elem_type);
+                add_TAC(t, $3->location, *($3->store_addr), ARR_R);
+                $3->location = t;
+                $3->type = second_operand->type.next_elem_type;
+            }
+            if(first_operand->type.type == ARRAY) {                       // If the first operand is an array, perform necessary operations
+                
+                //extract the value stored in array and save it in a temporary variable so that arithmetic operation can be performed 
+                string t = ST->generate_tem_var(first_operand->type.next_elem_type);
+                add_TAC(t, $1->location, *($1->store_addr), ARR_R);
+                $1->location = t;
+                $1->type = first_operand->type.next_elem_type;
+            }
+            $$ = new expression();
+            $$->location = ST->generate_tem_var();                            // Create a temporary variable to store the result
+            add_TAC($$->location, $1->location, $3->location, BW_AND);            // generate TAC quad
+            // $$  = $1 & $3
+        }
+        ;
 
-parameter_list:
+exclusive_or_expression: 
+        and_expression
+        {
+            $$ = $1;    // copy content from right to left
+        }
+        | exclusive_or_expression BITWISE_XOR and_expression
+        {
+            $$ = new expression();
+            ST_entry* first_operand = ST->search_lexeme($1->location);                  // Get the first operand from the ST_entry table
+            ST_entry* second_operand = ST->search_lexeme($3->location);                  // Get the second operand from the ST_entry table
+            if(second_operand->type.type == ARRAY) {                       // If the second operand is an array, perform necessary operations
+                
+                //extract the value stored in array and save it in a temporary variable so that arithmetic operation can be performed 
+                string t = ST->generate_tem_var(second_operand->type.next_elem_type);
+                add_TAC(t, $3->location, *($3->store_addr), ARR_R);
+                $3->location = t;
+                $3->type = second_operand->type.next_elem_type;
+            }
+            if(first_operand->type.type == ARRAY) {                       // If the first operand is an array, perform necessary operations
+                
+                //extract the value stored in array and save it in a temporary variable so that arithmetic operation can be performed 
+                string t = ST->generate_tem_var(first_operand->type.next_elem_type);
+                add_TAC(t, $1->location, *($1->store_addr), ARR_R);
+                $1->location = t;
+                $1->type = first_operand->type.next_elem_type;
+            }
+            $$ = new expression();
+            $$->location = ST->generate_tem_var();                            // Create a temporary variable to store the result
+            add_TAC($$->location, $1->location, $3->location, BW_XOR);            // generate TAC quad
+            //$$ =$1 ^ $3
+        }
+        ;
+
+inclusive_or_expression: 
+        exclusive_or_expression
+        {
+            $$ = new expression();
+            $$ = $1;                // copy content from right to left
+        }
+        | inclusive_or_expression BITWISE_OR exclusive_or_expression
+        {
+            $$ = new expression();
+            ST_entry* first_operand = ST->search_lexeme($1->location);                  // Get the first operand from the ST_entry table
+            ST_entry* second_operand = ST->search_lexeme($3->location);                  // Get the second operand from the ST_entry table
+            if(second_operand->type.type == ARRAY) {                       // If the second operand is an array, perform necessary operations
+                
+                //extract the value stored in array and save it in a temporary variable so that arithmetic operation can be performed 
+                string t = ST->generate_tem_var(second_operand->type.next_elem_type);
+                add_TAC(t, $3->location, *($3->store_addr), ARR_R);
+                $3->location = t;
+                $3->type = second_operand->type.next_elem_type;
+            }
+            if(first_operand->type.type == ARRAY) {                       // If the first operand is an array, perform necessary operations
+                
+                //extract the value stored in array and save it in a temporary variable so that arithmetic operation can be performed 
+                string t = ST->generate_tem_var(first_operand->type.next_elem_type);
+                add_TAC(t, $1->location, *($1->store_addr), ARR_R);
+                $1->location = t;
+                $1->type = first_operand->type.next_elem_type;
+            }
+            $$ = new expression();
+            $$->location = ST->generate_tem_var();                            // Create a temporary variable to store the result
+            add_TAC($$->location, $1->location, $3->location, BW_OR);             // generate TAC quad
+            //$$ = $1 | $3
+        }
+        ;
+
+logical_and_expression: 
+        inclusive_or_expression
+        {}
+        | logical_and_expression LOGICAL_AND M inclusive_or_expression
+        {
+            /*
+                augmented the grammar with the non-terminal M marker to have a track of next instruction to be executed during backpatching
+            */
+            backpatch($1->truelist, $3->instr);                     // Backpatching
+            $$->falselist = merge_list($1->falselist, $4->falselist);    // Generate falselist by merging the falselists of $1 and $4
+            $$->truelist = $4->truelist;                            // Generate truelist from truelist of $4
+            $$->type = BOOL;                                        // Set the type of the expression to boolean
+            // B-> B1 && MB2
+            // B.truelist = B2.truelist
+            // backpatch(B1.truelist, M.instr)
+            //B.falselist = merge_list(B1.falselist, B2.falselist)
+        
+        
+        }
+        ;
+
+logical_or_expression: 
+        logical_and_expression
+        {}
+        | logical_or_expression LOGICAL_OR M logical_and_expression
+        {
+            backpatch($1->falselist, $3->instr);                    // Backpatching
+            $$->truelist = merge_list($1->truelist, $4->truelist);       // Generate falselist by merging the falselists of $1 and $4
+            $$->falselist = $4->falselist;                          // Generate truelist from truelist of $4
+            $$->type = BOOL;                                        // Set the type of the expression to boolean
+            // B-> B1 || MB2
+            // B.falselist = B2.falselist
+            // backpatch(B1.falselist, M.instr)
+            //B.truelist = merge_list(B1.truelist, B2.truelist)
+        
+        }
+        ;
+
+conditional_expression: 
+        logical_or_expression
+        {
+            $$ = $1;    // copy content from right to left
+        }
+        | logical_or_expression N QUESTION_MARK M expression N COLON M conditional_expression
+        {   
+            /*
+                grammar is augmented with the non-terminals M marker and N to keep track of next instruction during backpatching
+            */
+            ST_entry* first_operand = ST->search_lexeme($5->location);
+            $$->location = ST->generate_tem_var(first_operand->type.type);      
+            $$->type = first_operand->type.type;
+            
+            add_TAC($$->location, $9->location, "", ASSIGN);         
+            list<int> temp = makelist(next_instruction);
+            
+            add_TAC("", "", "", GOTO);                     
+            backpatch($6->nextlist, next_instruction);         
+            
+            add_TAC($$->location, $5->location, "", ASSIGN);
+            temp = merge_list(temp, makelist(next_instruction));
+            
+            add_TAC("", "", "", GOTO);                     
+            backpatch($2->nextlist, next_instruction);     
+            convert_int_bool($1);                       
+            backpatch($1->truelist, $4->instr);         
+            backpatch($1->falselist, $8->instr);        
+            backpatch($2->nextlist, next_instruction);  
+            
+            /*
+            For E -> E1 N1 ? M1 E2 N2 : M2 E3
+            E.loc = gentemp();
+            E.type = E2.type; // Assume E2.type = E3.type
+            add_TAC(E.loc ’=’ E3 .loc); // Control gets here by fall-through
+            l = makelist(nextinstr);
+            add_TAC(goto .... );
+            backpatch(N 2 .nextlist, nextinstr);
+            add_TAC(E .loc ’=’ E 2 .loc);
+            l = merge_list(l, makelist(nextinstr));
+            add_TAC(goto .... );                   
+            backpatch(N1 .nextlist, nextinstr);
+            convInt2Bool(E1);
+            backpatch(E1 .truelist, M1 .instr); //backpatching
+            backpatch(E1 .falselist, M2 .instr);
+            backpatch(l, nextinstr);
+            */
+        }
+        ;
+
+M: %empty
+        {   
+            
+            //M - > epsilon 
+            //store the count of theb next instruction and will be used for backpatching in control flow statements
+            $$ = new expression();
+            $$->instr = next_instruction;
+        }
+        ;
+
+N: %empty
+        {
+             // N -> epsilon 
+            // Helps in control flow statments
+           
+            $$ = new expression();
+            $$->nextlist = makelist(next_instruction);
+            add_TAC("", "", "", GOTO);
+        }
+        ;
+
+assignment_expression: 
+        conditional_expression
+        {}
+        | unary_expression assignment_operator assignment_expression
+        {
+            ST_entry* sym1 = ST->search_lexeme($1->location);         // Get the first operand from the ST_entry table
+            ST_entry* sym2 = ST->search_lexeme($3->location);         // Get the second operand from the ST_entry table
+            if($1->order_dim == 0) {
+                if(sym1->type.type != ARRAY)
+                    add_TAC($1->location, $3->location, "", ASSIGN);
+                else
+                    add_TAC($1->location, $3->location, *($1->store_addr), ARR_L);
+            }
+            else
+                add_TAC(*($1->store_addr), $3->location, "", L_DEREF);
+            $$ = $1;        // Assignment 
+        }
+        ;
+
+assignment_operator: 
+        ASSIGN_
+        {}
+        | MUL_ASSIGN
+        {}
+        | F_SLASH_ASSIGN
+        {}
+        | MODULO_ASSIGN
+        {}
+        | PLUSASSIGN
+        {}
+        | SUBTRACT_ASSIGN
+        {}
+        | LEFT_SHIFT_ASSIGN
+        {}
+        | RIGHT_SHIFT_ASSIGN
+        {}
+        | BITWISE_AND_ASSIGN
+        {}
+        | BITWISE_XOR_ASSIGN
+        {}
+        | BITWISE_OR_ASSIGN
+        {}
+        ;
+
+expression: 
+        assignment_expression
+        {}
+        | expression COMMA assignment_expression
+        {}
+        ;
+
+constant_expression: 
+        conditional_expression
+        {}
+        ;
+
+//declaration
+//these productions will be responsible for updating and creating symbol table
+
+declaration: 
+        declaration_specifiers init_declarator_list SEMICOLON
+        {
+            data_dtype current_dtype = $1;
+            int current_dsize = -1;
+
+            // assign size according to the datatype
+            if(current_dtype == INT)
+                current_dsize = 4;
+            else if(current_dtype == CHAR)
+                current_dsize = 1;
+            else if(current_dtype == FLOAT)
+                current_dsize = 8;
+           
+            //get the set of declarations
+            vector<declaration*> decs = *($2);
+            
+            //iterate over declarations
+            for(vector<declaration*>::iterator it = decs.begin(); it != decs.end(); it++) {
+                declaration* currDec = *it;
+                
+                //if a function declaration is found
+                if(currDec->type == FUNCTION) {
+                    //move back to gloabl symbol table
+                    ST = &ST_global;
+                    //add a TAC code marking the end of function
+                    add_TAC(currDec->name, "", "", FUNC_END);
+                    
+                    //find the func in the global symbol table
+                    ST_entry* first_operand = ST->search_lexeme(currDec->name);        // Create an entry for the function
+
+                    //find the lexeme with name return value in nested table of the entry corresponding to func name
+                    //i.e. search for return lexeme in function symbol table
+                    ST_entry* second_operand = first_operand->nested_symbol_table->search_lexeme("RETVAL", current_dtype, currDec->pointers);
+                    
+                    //update func symbol's attributes in global symbol table
+                    first_operand->size = 0;
+                    first_operand->initial_value = NULL;
+                    continue;
+                }
+
+                //if the current declaration is not of type function
+                ST_entry* three = ST->search_lexeme(currDec->name, current_dtype);        // create a new symbol
+                three->nested_symbol_table = NULL;                                         //since this is not a function there won't be nested tables
+                
+                if(currDec->li == vector<int>() && currDec->pointers == 0) {
+                    three->type.type = current_dtype;                                       //assign the data type to all variables
+                    three->size = current_dsize;                                            //assign data type's size to all variables
+                    
+                    if(currDec->initial_value != NULL) {                                    //if it has an initial value
+                        string rval = currDec->initial_value->location;
+                        add_TAC(three->name, rval, "", ASSIGN);
+                        three->initial_value = ST->search_lexeme(rval)->initial_value;      //assign the intial value to this variable
+                    }
+                    else
+                        three->initial_value = NULL;                                        //else assign null as initial value     
+                }       
+                else if(currDec->li != vector<int>()) {                                     // Handle array data type
+                    three->type.type = ARRAY;                                               //set type as arary
+                    three->type.next_elem_type = current_dtype;                             //array elements would of type current data type
+                    three->type.dims = currDec->li;                                         //set the dimension of array
+                    vector<int> temp = three->type.dims;                                    //if the array is of type ar[3][4][5] then 3,4,5 would be stored in the vector
+
+                    int size = current_dsize;
+                    for(int i = 0; i < (int)temp.size(); i++)                                //temp holds the value of dimensions
+                        size *= temp[i];
+                    ST->offset += size;                                                      //multiply the dimension to find total number of bytes occupied by array
+                    three->size = size;
+                    ST->offset -= 4;
+                }
+                else if(currDec->pointers != 0) {                                           //to handle pointer data type
+                    three->type.type = POINTER;                                             //set data type of the variable
+                    three->type.next_elem_type = current_dtype;                             //set the data type of the element pointed by the pointer
+                    three->type.pointers = currDec->pointers;                               
+                    ST->offset += (8 - current_dsize);                                      //update the offset but since pointer is of size 8 add that to the offset. 
+                    three->size = 8;
+                }
+            }
+        }
+        | declaration_specifiers SEMICOLON
+        {}
+        ;
+
+declaration_specifiers: 
+        storage_class_specifier declaration_specifiers
+        {}
+        |storage_class_specifier
+        {}
+        | type_specifier declaration_specifiers
+        {}
+        | type_specifier
+        {}
+        | type_qualifier declaration_specifiers
+        {}
+        | type_qualifier
+        {}
+        | function_specifier declaration_specifiers
+        {}
+        | function_specifier
+        {}
+        ;
+
+init_declarator_list: 
+        init_declarator
+        {
+            $$ = new vector<declaration*>;      // add all declarations to the vector
+            $$->push_back($1);
+        }
+        | init_declarator_list COMMA init_declarator
+        {
+            $1->push_back($3);                  // continue adding declaration to the vector
+            $$ = $1;
+        }
+        ;
+
+init_declarator: 
+        declarator
+        {
+            $$ = $1;
+            $$->initial_value = NULL;         // Initialize the initial_value to NULL as no initiali value given
+        }
+        | declarator ASSIGN_ initializer
+        {   
+            $$ = $1;
+            $$->initial_value = $3;           // Initialize the initial_value to the value provided
+        }
+        ;
+
+storage_class_specifier: 
+        EXTERN
+        {}
+        | STATIC
+        {}
+        | AUTO
+        {}
+        | REGISTER
+        {}
+        ;
+
+type_specifier: 
+        VOID_
+        {
+            $$ = VOID;
+        }
+        | CHAR_
+        {
+            $$ = CHAR;
+        }
+        | SHORT
+        {}
+        | INT_
+        {
+            $$ = INT; 
+        }
+        | LONG
+        {}
+        | FLOAT_
+        {
+            $$ = FLOAT;
+        }
+        | DOUBLE
+        {}
+        | SIGNED
+        {}
+        | UNSIGNED
+        {}
+        | BOOL_
+        {}
+        | COMPLEX
+        {}
+        | IMAGINARY
+        {}
+        | enum_specifier
+        {}
+        ;
+
+specifier_qualifier_list: 
+        type_specifier specifier_qualifier_list_opt
+        {}
+        | type_qualifier specifier_qualifier_list_opt
+        {}
+        ;
+
+specifier_qualifier_list_opt: 
+        specifier_qualifier_list
+        {}
+        | %empty
+        {}
+        ;
+
+enum_specifier: 
+        ENUM LEFT_CURLY enumerator_list RIGHT_CURLY
+        {}
+        | ENUM IDENTIFIER LEFT_CURLY enumerator_list RIGHT_CURLY
+        {}
+        | ENUM IDENTIFIER LEFT_CURLY enumerator_list COMMA RIGHT_CURLY
+        {}
+        | ENUM IDENTIFIER
+        {}
+        ;
+
+enumerator_list: 
+        enumerator
+        {}
+        | enumerator_list COMMA enumerator
+        {}
+        ;
+
+enumerator: 
+        IDENTIFIER
+        {}
+        | IDENTIFIER ASSIGN_ constant_expression
+        {}
+        ;
+
+type_qualifier: 
+        CONST
+        {}
+        | RESTRICT
+        {}
+        | VOLATILE
+        {}
+        ;
+
+function_specifier: 
+        INLINE
+        {}
+        ;
+
+declarator: 
+        pointer direct_declarator
+        {
+            $$ = $2;
+            $$->pointers = $1;
+        }
+        | direct_declarator
+        {
+            $$ = $1;
+            $$->pointers = 0;
+        }
+        ;
+
+direct_declarator: 
+        IDENTIFIER
+        {
+            $$ = new declaration();
+            $$->name = *($1);
+        }
+        | LEFT_PARENTHESIS declarator RIGHT_PARENTHESIS
+        {}
+        | direct_declarator LEFT_SQUARE type_qualifier_list_opt RIGHT_SQUARE
+        {
+            $1->type = ARRAY;       // Array type
+            $1->next_elem_type = INT;     // Array of ints
+            $$ = $1;
+            $$->li.push_back(0);
+        }
+        | direct_declarator LEFT_SQUARE type_qualifier_list_opt assignment_expression RIGHT_SQUARE
+        {
+            $1->type = ARRAY;       // Array type
+            $1->next_elem_type = INT;     // Array of ints
+            $$ = $1;
+            int index = ST->search_lexeme($4->location)->initial_value->i;
+            $$->li.push_back(index);
+        }
+        | direct_declarator LEFT_SQUARE STATIC type_qualifier_list assignment_expression RIGHT_SQUARE
+        {}
+        | direct_declarator LEFT_SQUARE type_qualifier_list STATIC assignment_expression RIGHT_SQUARE
+        {}
+        | direct_declarator LEFT_SQUARE type_qualifier_list_opt MUL RIGHT_SQUARE
+        {
+            $1->type = POINTER;     // Pointer type
+            $1->next_elem_type = INT;
+            $$ = $1;
+        }
+        | direct_declarator LEFT_PARENTHESIS parameter_type_list_opt RIGHT_PARENTHESIS
+        {
+            $$ = $1;
+            $$->type = FUNCTION;    // Function type
+            ST_entry* funcData = ST->search_lexeme($$->name, $$->type);
+            symbol_table* function_ST = new symbol_table();
+            funcData->nested_symbol_table = function_ST;
+            vector<param*> paramList = *($3);   // Get the parameter list
+            for(int i = 0; i < (int)paramList.size(); i++) {
+                param* curParam = paramList[i];
+                if(curParam->type.type == ARRAY) {          // If the parameter is an array
+                    function_ST->search_lexeme(curParam->name, curParam->type.type);
+                    function_ST->search_lexeme(curParam->name)->type.next_elem_type = INT;
+                    function_ST->search_lexeme(curParam->name)->type.dims.push_back(0);
+                }
+                else if(curParam->type.type == POINTER) {   // If the parameter is a pointer
+                    function_ST->search_lexeme(curParam->name, curParam->type.type);
+                    function_ST->search_lexeme(curParam->name)->type.next_elem_type = INT;
+                    function_ST->search_lexeme(curParam->name)->type.dims.push_back(0);
+                }
+                else                                        // If the parameter is a anything other than an array or a pointer
+                    function_ST->search_lexeme(curParam->name, curParam->type.type);
+            }
+            ST = function_ST;         // Set the pointer to the ST_entry table to the function's ST_entry table
+            add_TAC($$->name, "", "", FUNC_BEG);
+        }
+        | direct_declarator LEFT_PARENTHESIS identifier_list RIGHT_PARENTHESIS
+        {}
+        ;
+
+parameter_type_list_opt:
+        parameter_type_list
+        {}
+        | %empty
+        {
+            $$ = new vector<param*>;
+        }
+        ;
+
+type_qualifier_list_opt: 
+        type_qualifier_list
+        {}
+        | %empty
+        {}
+        ;
+
+pointer: 
+        MUL type_qualifier_list
+        {}
+        | MUL
+        {
+            $$ = 1;
+        }
+        | MUL type_qualifier_list pointer
+        {}
+        | MUL pointer
+        {
+            $$ = 1 + $2;
+        }
+        ;
+
+type_qualifier_list: 
+        type_qualifier
+        {}
+        | type_qualifier_list type_qualifier
+        {}
+        ;
+
+parameter_type_list: 
+        parameter_list
+        | parameter_list COMMA ELLIPSIS
+        ;
+
+parameter_list: 
         parameter_declaration
-        { //printinfo("parameter_list -> parameter_declaration\n"); 
+        {
+            $$ = new vector<param*>;         // Create a new vector of parameters
+            $$->push_back($1);              // Add the parameter to the vector
         }
-        |parameter_list ',' parameter_declaration
-        { //printinfo("parameter_list -> parameter_list , parameter_declaration\n"); 
-        }
-        ;
-
-parameter_declaration:
-           declaration_specifiers declarator
-           { //printinfo("parameter_declaration -> declaration_specifiers declarator\n"); 
-           }
-           |declaration_specifiers
-           { //printinfo("parameter_declaration -> declaration_specifiers\n"); 
-           }
-           ;
-
-identifier_list:
-         IDENTIFIER
-         { //printinfo("type_name -> specifier_qualifier_list\n");
-          }
-
-         |identifier_list ',' IDENTIFIER
-         { //printinfo("identifier_list -> identifier_list , identifier\n");
-          }
-         ;
-
-identifier_list_optional:
-           identifier_list
-           |
-           ;
-
-type_name:
-     specifier_qualifier_list
-     { //printinfo("type_name -> specifier_qualifier_list\n"); 
-     }
-     ;
-
-initializer:
-       assignment_expression
-       { //printinfo("initializer -> assignment_expression\n");
-                $$ = $1->loc;
-                int zero = 0;   
-                int one = 1;
-
-        }
-       |'{' initializer_list '}'
-       { //printinfo("initializer -> { initializer_list }\n"); 
-       }
-       |'{' initializer_list ',' '}'
-       { //printinfo("initializer -> { initializer_list , }\n");
-        }
-       ;
-
-initializer_list:
-        designation_optional initializer
-        { //printinfo("initializer_list -> designation_opt initializer\n");
-         }
-        |initializer_list ',' designation_optional initializer
-        { //printinfo("initializer_list -> initializer_list , designation_opt initializer\n"); 
+        | parameter_list COMMA parameter_declaration
+        {
+            $1->push_back($3);              // Add the parameter to the vector
+            $$ = $1;
         }
         ;
 
-designation:
-       designator_list '='
-       { //printinfo("designation -> designator_list =\n"); 
-       }
-       ;
+parameter_declaration: 
+        declaration_specifiers declarator
+        {
+            $$ = new param();
+            $$->name = $2->name;
+            if($2->type == ARRAY) {
+                $$->type.type = ARRAY;
+                $$->type.next_elem_type = $1;
+            }
+            else if($2->pc != 0) {
+                $$->type.type = POINTER;
+                $$->type.next_elem_type = $1;
+            }
+            else
+                $$->type.type = $1;
+        }
+        | declaration_specifiers
+        {}
+        ;
 
-designation_optional:
-       designation
-       |
-       ;
+identifier_list: 
+        IDENTIFIER
+        {}
+        | identifier_list COMMA IDENTIFIER
+        {}
+        ;
 
-designator_list:
-         designator 
-         { //printinfo("designator_list -> designator\n"); 
-         }
-         |designator_list designator
-         { //printinfo("designator_list -> designator_list designator\n"); 
-         }
-         ;
+type_name: 
+        specifier_qualifier_list
+        {}
+        ;
 
-designator:
-      '[' constant_expression ']'
-      { //printinfo("designator -> [ constant_expression ]\n"); 
-      }
-      |'.' IDENTIFIER
-      { //printinfo("designator -> . identifier\n");
-       }
-      ;
+initializer: 
+        assignment_expression
+        {
+            $$ = $1;   // copy content from right to left
+        }
+        | LEFT_CURLY initializer_list RIGHT_CURLY
+        {}
+        | LEFT_CURLY initializer_list COMMA RIGHT_CURLY
+        {}
+        ;
 
-statement:
-     labeled_statement
-     { //printinfo("statement -> labeled_statement\n"); 
-     }
-     |compound_statement
-     { //printinfo("statement -> compound_statement\n");
-     $$=$1;
-      }
-     |expression_statement
-     { //printinfo("statement -> expression_statement\n"); 
-                int zero = 0;      
-                int one = 1;
-                $$ = new statement();
-                $$->nextlist = $1->nextlist;
+initializer_list: 
+        designation_opt initializer
+        {}
+        | initializer_list COMMA designation_opt initializer
+        {}
+        ;
 
-     }
-     |selection_statement
-     { //printinfo("statement -> selection_statement\n
+designation_opt: 
+        designation
+        {}
+        | %empty
+        {}
+        ;
 
-        $$=$1;
+designation: 
+        designator_list ASSIGN_
+        {}
+        ;
 
-     }
-     |iteration_statement
-     { //printinfo("statement -> iteration_statement\n"); 
-     $$=$1;
-     }
-     |jump_statement
-     { //printinfo("statement -> jump_statement\n"); 
-     $$=$1;
+designator_list: 
+        designator
+        {}
+        | designator_list designator
+        {}
+        ;
 
-     }
-     ;
+designator: 
+        LEFT_SQUARE constant_expression RIGHT_SQUARE
+        {}
+        | DOT IDENTIFIER
+        {}
+        ;
 
-labeled_statement:
-         IDENTIFIER ':' statement
-         { //printinfo("labeled_statement -> identifier : statement\n");
-                $$ = new statement();
+statement: 
+        labeled_statement
+        {}
+        | compound_statement
+        | expression_statement
+        | selection_statement
+        | iteration_statement
+        | jump_statement
+        ;
 
-          }
-         |CASE constant_expression ':' statement
-         { //printinfo("labeled_statement -> case constant_expression : statement\n");
-                $$ = new statement();
+labeled_statement: 
+        IDENTIFIER COLON statement
+        {}
+        | CASE constant_expression COLON statement
+        {}
+        | DEFAULT COLON statement
+        {}
+        ;
 
-          }
-         |DEFAULT ':' statement
-         { //printinfo("labeled_statement -> default : statement\n");
-         $$ = new statement();
-          }
-         ;
+compound_statement: 
+        LEFT_CURLY RIGHT_CURLY
+        {}
+        | LEFT_CURLY block_item_list RIGHT_CURLY
+        {
+            $$ = $2;
+        }
+        ;
 
-compound_statement:
-          '{' block_item_list '}'
-          { //printinfo("compound_statement -> { block_item_list_opt }\n"); 
-                $$=$2;
+block_item_list: 
+        block_item
+        {
+            $$ = $1;    // copy content from right to left
+            backpatch($1->nextlist, next_instruction);
+        }
+        | block_item_list M block_item
+        {   
+            
+            /*
+                M marker has been added to keep track of next instruction during backpatching
+            */
+            $$ = new expression();
+            backpatch($1->nextlist, $2->instr);    // M.instr would be the next instruction after $1 so backpatch 
+            $$->nextlist = $3->nextlist;
+        }
+        ;
 
-          }
-          | '{' '}' {$$ = new statement();}
-          ;
+block_item: 
+        declaration
+        {
+            $$ = new expression();   // new expression node
+        }
+        | statement
+        ;
 
-block_item_list:
-         block_item 
-         { //printinfo("block_item_list -> block_item\n"); 
-         $$=$1;
-         }
-         |block_item_list M block_item
-         { //printinfo("block_item_list -> block_item_list block_item\n"); 
-
-                $$=$3;
-                backpatch ($1->nextlist, $2);
-
-         }
-         ;
-
-block_item_list_optional:
-           block_item_list
-           |
-           ;
-
-block_item:
-      declaration
-      { //printinfo("block_item -> declaration\n"); 
-      $$ = new statement();
-
-      }
-      |statement
-      { //printinfo("block_item -> statement\n");
-
-        $$ = $1;
-       }
-      ;
-
-expression_statement:
-          expression ';' {$$=$1;}
-        |';' {$$ = new expr();}
-          ;
+expression_statement: 
+        expression SEMICOLON
+        {}
+        | SEMICOLON
+        {
+            $$ = new expression();  // new expression node
+        }
+        ;
 
 selection_statement:
-           IF '(' expression N ')' M statement N %prec THEN{
-                backpatch ($4->nextlist, nextinstr());
-                convertInt2Bool($3);
-                $$ = new statement();
-                backpatch ($3->truelist, $6);
-                list<int> temp = merge ($3->falselist, $7->nextlist);
-                $$->nextlist = merge ($8->nextlist, temp);
+/*
+
+If Else
+
+%prec THEN is to remove conflicts/ambiguity
+
+Marker M to keep track of next isntruction and N to keep track of nextlist
+
+S -> if (B) M S1 N
+backpatch(B.truelist, M.instr )
+temp = merge_list(S1.nextlist, N.nextlist)
+S.nextlist = merge_list(B.falselist,temp)
+
+S -> if (B) M1 S1 N else M2 S2
+backpatch(B.truelist, M1.instr)
+backpatch(B.falselist, M2.instr)
+temp = merge_list(S1.nextlist, N.nextlist)
+S.nextlist = merge_list(temp, S2 .nextlist)
+
+*/
+
+        IF LEFT_PARENTHESIS expression N RIGHT_PARENTHESIS M statement N
+        {
+            /*
+                M and N markers help in backpatching
+            */
+            backpatch($4->nextlist, next_instruction);         //backpatching
+            convert_int_bool($3);                       // Convert expression to bool
+            backpatch($3->truelist, $6->instr);         // Backpatching 
+            $$ = new expression();                      // new expression node
+            
+            // Merge falselist of expression, nextlist of statement and nextlist of the last N
+            $7->nextlist = merge_list($8->nextlist, $7->nextlist);
+            $$->nextlist = merge_list($3->falselist, $7->nextlist);
         }
-        |IF '(' expression N ')' M statement N ELSE M statement {
-                backpatch ($4->nextlist, nextinstr());
-                convertInt2Bool($3);
-                int zero = 0;   
-                int one = 1;
-                $$ = new statement();
-                backpatch ($3->truelist, $6);
-                backpatch ($3->falselist, $10);
-                int zeroo = 0;  
-                int onee = 1;
-                list<int> temp = merge ($7->nextlist, $8->nextlist);
-                $$->nextlist = merge ($11->nextlist,temp);
+        | IF LEFT_PARENTHESIS expression N RIGHT_PARENTHESIS M statement N ELSE M statement N
+        {
+            /*
+                M and N markers help in backpatching
+            */
+            backpatch($4->nextlist, next_instruction);         // backpatching
+            convert_int_bool($3);                       // Convert expression to bool
+            backpatch($3->truelist, $6->instr);         // backpatching
+            backpatch($3->falselist, $10->instr);
+            $$ = new expression();                      // new expression node
+            
+            // Merge nextlist of statement, nextlist of N and nextlist of the last statement
+            $$->nextlist = merge_list($7->nextlist, $8->nextlist);
+            $$->nextlist = merge_list($$->nextlist, $11->nextlist);
+            $$->nextlist = merge_list($$->nextlist, $12->nextlist);
         }
-        |SWITCH '(' expression ')' statement {//later
+        | SWITCH LEFT_PARENTHESIS expression RIGHT_PARENTHESIS statement
+        {}
+        ;
+
+iteration_statement: 
+        // M and N markers are used as usual to keep a track of next instruction to be executed 
+        //which would be used for backpatching. 
+        WHILE M LEFT_PARENTHESIS expression N RIGHT_PARENTHESIS M statement
+        {   
+            
+            $$ = new expression();                      // Create a new expression
+            add_TAC("", "", "", GOTO);                  // add TAC with missing label
+            
+            backpatch(makelist(next_instruction - 1), $2->instr);
+            backpatch($5->nextlist, next_instruction);
+            convert_int_bool($4);                       // Convert expression to bool
+            $$->nextlist = $4->falselist;               // Exit loop if expression is false
+            backpatch($4->truelist, $7->instr);         // Go to M2 and loop_statement if expression is true
+            backpatch($8->nextlist, $2->instr);         // Go back to M1 and expression after one iteration of loop_statement
+        }
+        | DO M statement M WHILE LEFT_PARENTHESIS expression N RIGHT_PARENTHESIS SEMICOLON
+        {
+            
+            $$ = new expression();                  // Create a new expression  
+            backpatch($8->nextlist, next_instruction);     // Backpatching 
+            convert_int_bool($7);                   // Convert expression to bool
+            backpatch($7->truelist, $2->instr);     // Go back to M1 and loop_statement if expression is true
+            backpatch($3->nextlist, $4->instr);     // Go to M2 to check expression after statement is complete
+            $$->nextlist = $7->falselist;           // Exit loop if expression is false
+        }
+        | FOR LEFT_PARENTHESIS expression_statement M expression_statement N M expression N RIGHT_PARENTHESIS M statement
+        {
+            
+            $$ = new expression();                   // Create a new expression
+            add_TAC("", "", "", GOTO);
+            $12->nextlist = merge_list($12->nextlist, makelist(next_instruction - 1));
+            backpatch($12->nextlist, $7->instr);    
+            backpatch($9->nextlist, $4->instr);     
+            backpatch($6->nextlist, next_instruction);     
+            convert_int_bool($5);                   // Convert expression to bool
+            backpatch($5->truelist, $11->instr);    // backpatching
+            $$->nextlist = $5->falselist;           // Exit loop if expression is false
         }
         ;
 
-
-iteration_statement:
-           WHILE M '(' expression ')' M statement
-           { //printinfo("iteration_statement -> while ( expression ) statement\n");
-           $$ = new statement();
-                convertInt2Bool($4);
-  
-                int temp = 1;
-                // M1 to go back to boolean again
-                // M2 to go to statement if the boolean is true
-                backpatch($7->nextlist, $2);
-                backpatch($4->truelist, $6);
-                $$->nextlist = $4->falselist;
-                int zeroo = 0;  
-                int onee = 1;
-                // Emit to prevent fallthrough
-                stringstream STring;
-            STring << $2;
-            string TempString = STring.str();
-            char* Int_STring = (char*) TempString.c_str();
-                string str = string(Int_STring);
-                int zerooo = 0; 
-                int oneee = 1;
-                emit ("GOTOOP", str);
-
+jump_statement: 
+        GOTO_ IDENTIFIER SEMICOLON
+        {}
+        | CONTINUE SEMICOLON
+        {}
+        | BREAK SEMICOLON
+        {}
+        | RETURN_ SEMICOLON
+        {
+            if(ST->search_lexeme("RETVAL")->type.type == VOID) {
+                add_TAC("", "", "", RETURN);           // generate TAC quad when return type is void
             }
-           |DO M statement M WHILE '(' expression ')' ';'
-           { //printinfo("iteration_statement -> do statement while ( expression ) ;\n");
-           $$ = new statement();
-                convertInt2Bool($7);
-                int zero = 0;   
-                int one = 1;
-                // M1 to go back to statement if expression is true
-                // M2 to go to check expression if statement is complete
-                backpatch ($7->truelist, $2);
-                backpatch ($3->nextlist, $4);
-
-                // Some bug in the next statement
-                $$->nextlist = $7->falselist;
-
+            $$ = new expression();
+        }
+        | RETURN_ expression SEMICOLON
+        {
+            if(ST->search_lexeme("RETVAL")->type.type == ST->search_lexeme($2->location)->type.type) {
+                add_TAC($2->location, "", "", RETURN);      // generate TAC quad when return type is not void
             }
-           |
-                FOR '(' expression_statement M expression_statement ')' M statement{
-                $$ = new statement();
-                convertInt2Bool($5);
-                backpatch ($5->truelist, $7);
-                backpatch ($8->nextlist, $4);
-                stringstream STring;
-            STring << $4;
-                int zero = 0;   
-                int one = 1;
-            string TempString = STring.str();
-            char* Int_STring = (char*) TempString.c_str();
-                string str = string(Int_STring);
-
-                emit ("GOTOOP", str);
-                $$->nextlist = $5->falselist;
-        }
-        |FOR '(' expression_statement M expression_statement M expression N ')' M statement{
-                $$ = new statement();
-                int zeroo = 0;  
-                int onee = 1;
-                convertInt2Bool($5);
-                backpatch ($5->truelist, $10);
-                backpatch ($8->nextlist, $4);
-                backpatch ($11->nextlist, $6);
-                stringstream STring;
-            STring << $6;
-                int zero = 0;   
-                int one = 1;
-            string TempString = STring.str();
-            char* Int_STring = (char*) TempString.c_str();
-                string str = string(Int_STring);
-                emit ("GOTOOP", str);
-                $$->nextlist = $5->falselist;
-        }
-        ;
-           
-
-jump_statement:
-        GOTO IDENTIFIER ';'
-        { //printinfo("jump_statement -> goto identifier ;\n"); 
-        $$ = new statement();
-
-        }
-        |CONTINUE ';'
-        { //printinfo("jump_statement -> continue ;\n"); 
-        $$ = new statement();
-
-        }
-        |BREAK ';'
-        { //printinfo("jump_statement -> break ;\n");
-        $$ = new statement();
-
-         }
-        |RETURN expression ';' {
-                $$ = new statement();
-   
-                int temp = 1;
-                emit("RETURN",$2->loc->name);
-        }
-        |RETURN ';' {
-                $$ = new statement();
-  
-                int temp = 1;
-                emit("RETURN","");
+            $$ = new expression();
         }
         ;
 
-translation_unit:
+translation_unit: 
         external_declaration
-        { //printinfo("translation_unit -> external_declaration\n");
-         }
-        |translation_unit external_declaration
-        {// printinfo("translation_unit -> external_declaration\n"); 
-        }
+        {}
+        | translation_unit external_declaration
+        {}
         ;
 
-external_declaration:
+external_declaration: 
         function_definition
-        { //printinfo("external_declaration -> function_definition\n"); 
-        }
-        |declaration
-        {// printinfo("external_declaration -> declaration\n");
-         }
+        {}
+        | declaration
+        {}
         ;
 
-function_definition:
-        declaration_specifiers declarator declaration_list CT compound_statement
-        { //printinfo("function_definition -> declaration_specifiers declarator declaration_list_opt compound_statement\n");
-         }
-
-        |declaration_specifiers declarator CT compound_statement {
-  
-                int temp = 1;
-                currTable->parent = globalTable;
-                changeTable (globalTable);
+function_definition: 
+        declaration_specifiers declarator declaration_list compound_statement
+        {}
+        | function_prototype compound_statement
+        {
+            ST = &ST_global;                     // Reset the symbol table to global symbol table
+            add_TAC($1->name, "", "", FUNC_END);
         }
         ;
 
-declaration_list:
+function_prototype:
+        //function initialiser
+        declaration_specifiers declarator
+        {
+            data_dtype current_dtype = $1;//extract the type of return 
+            int current_dsize = -1;
+            if(current_dtype == CHAR)
+                current_dsize = 1;
+            if(current_dtype == INT)
+                current_dsize = 4;
+            if(current_dtype == FLOAT)
+                current_dsize = 8;
+
+            declaration* currDec = $2;
+            ST_entry* sym = ST_global.search_lexeme(currDec->name);
+            
+            if(currDec->type == FUNCTION) {//if the type of declarator is function
+                ST_entry* retval = sym->nested_symbol_table->search_lexeme("RETVAL", current_dtype, currDec->pointers);   // Create entry for return value
+                sym->size = 0;
+                sym->initial_value = NULL;//intialize return value as NULL
+            }
+            $$ = $2;
+        }
+        ;
+
+declaration_list: 
         declaration
-        { //printinfo("declaration_list -> declaration\n");
-         }
-        |declaration_list declaration
-        { //printinfo("declaration_list -> declaration_list declaration\n"); 
-        }
+        {}
+        | declaration_list declaration
+        {}
         ;
 
-declaration_list_optional:
-        declaration_list
-        |
-        ;
-
-identifier_optional:
-        IDENTIFIER
-        |
-        ;
 %%
 
-void yyerror(const char *s) {
-        printf("Error occured : %s\n",s);
-}
-
-void printinfo(char* s) {
-        printf("Line %d: %s",yylineno,s);
+void yyerror(string s) {
+printf("error in Line: %d ( %s )\n" , yylineno, s.c_str());
 }

@@ -1,160 +1,197 @@
-/*
-Name: Sanskar Mittal              Roll No:   21CS10057
-Name: Voddula Karthik Reddy       Roll No:   21CS30058
-Semester: 5th
-Assignment 6: Target Code Generator for tinyC
-File: translator header file
-*/
 
-#ifndef TRANSLATOR_H
-#define TRANSLATOR_H
-#include<bits/stdc++.h>
+#ifndef __TRANSLATOR_H
+#define __TRANSLATOR_H
 
+#include <iostream>
+#include <vector>
+#include <list>
+#include <map>
 using namespace std;
 
-#define CHAR_BYTE_SIZE 		    1
-#define INT_BYTE_SIZE  		    4
-#define DOUBLE_BYTE_SIZE		8
-#define POINTER_BYTE_SIZE		4
 
-extern  char* yytext;
-extern  int yyparse();
-
-// Declaring the classes
-class symtype;					// Symbol type class
-class sym;						// Element of symbol table
-class symtable;					// Symbol Table
-class quad;						// Element of quad array
-class quadArray;				// QuadArray
-
-// Variables to be exported to the cxx file
-extern symtable* currTable;					// Current Symbol Table
-extern symtable* globalTable;				// Global Symbol Table
-extern quadArray qArr;						// Quadarray object
-extern sym* currSymbol;					    // A pointer pointing to the symbol read just now
+//enum specifying all legal data types
+typedef enum {
+    VOID,
+    BOOL,
+    CHAR,
+    INT,
+    FLOAT,
+    ARRAY,
+    POINTER,
+    FUNCTION
+} data_dtype;
 
 
-/*      Class definitions       */
+//enum spcifying all legal opcodes
+typedef enum  {
+    ADD, SUB, MULT, DIV, MOD, SL, SR, //arithmetic
+    BW_AND, BW_OR, BW_XOR, //binary operator
+    BW_U_NOT ,U_PLUS, U_MINUS, REFERENCE, DEREFERENCE, U_NEG,//unary operators 
+    GOTO_EQ, GOTO_NEQ, GOTO_GT, GOTO_GTE, GOTO_LT, GOTO_LTE, IF_GOTO, IF_FALSE_GOTO,//jump/ conditional jumps 
+    CtoI, ItoC, FtoI, ItoF, FtoC ,CtoF,//type conversion 
+    ASSIGN, GOTO, RETURN, PARAM, CALL, ARR_R, ARR_L, FUNC_BEG, FUNC_END, L_DEREF//miscellenous
+} opcode;
 
-// Symbol type class
-class symtype {
-public:
-	symtype(string name, symtype* ptr = NULL, int width = 1);   // Constructor
-	string type;				                                // Type of symbol in the table
-	symtype* ptr;				                                // For arrays
-	int width;					                                // Size of array (in case of arrays)
+
+class ST_entry;                 //Represents a symbol in the symbol table
+class ST_entry_type;            //Represents the type of symbol
+class ST_entry_value;           //Represents the value of the symbol
+class symbol_table;             //data structure containing list of symbols i.e. symbol table
+
+class quad;                     //a quad format code
+class quad_TAC_arr;             //list of TAC_quad_list that will be used to print TAC codes      
+
+
+//External functions exported from bison
+extern char* yytext;
+extern int yyparse();
+
+class ST_entry_type {
+    //type of symbol 
+public: 
+    int pointers;                       //only useful in case the symbol is of type pointer
+    data_dtype type;                    //The data type of the symbol
+    data_dtype next_elem_type;          //pointer to the type of elements in an arary or the data pointed to by a pointer
+    vector<int> dims;                   //dimension of an array stored in the form of vector
 };
 
-// Quad Class - Element of quadArray
+
+class ST_entry_value {
+//value of a symbol
+public:
+    int i;                          //to store int value
+    char c;                         //to store char value
+    float f;                        //to store float value
+    void* p;                        //to store pointer value
+
+    void initialize(int val);       //member function to assign initial value to member variables 
+    void initialize(char val);
+    void initialize(float val);
+};
+
+class ST_entry {
+//symbol table row
+public:
+    string name;                            //name of symbol
+    ST_entry_type type;                     //type of symbol
+    ST_entry_value* initial_value;          //intial value of symbol
+    int size;                               //size of symbol 
+    int offset;                             //offset to keep track of relative addressing
+    symbol_table* nested_symbol_table;      //nested_symbol_table for blocks and functions
+
+    ST_entry();                             //constructor
+};
+
+
+class symbol_table {
+public:
+    map<string, ST_entry*> table;                                                   //map to map lexeme with its symbol table entry
+    vector<ST_entry*> list_ST_entry;                                                //list of all suymbol table entries
+    int offset;                                                                     //running value of offset
+    static int temporary_var;                                                       //to keep track of number of temporary variables created
+
+    symbol_table();                                                                 //constructor
+    ST_entry* search_lexeme(string name, data_dtype t = INT, int pc = 0);           //search function to search for symbol table entry of lexeme
+    ST_entry* search_global_ST(string name);                                        //search function to search for lexeme in global symbol table
+    string generate_tem_var(data_dtype t = INT);                                    //generate temporary variable in symbol table
+    void print_ST(string tableName);                                                //print symbol table
+};
+
 class quad {
+//to store tac codes in quad format
 public:
-	string operator1;					// Operator of the expression
-	string answer;						// Result of the expression
-	string argument1;					// Argument 1 of the expression
-	string argument2;					// Argument 2 of the expression
+    opcode op;                                                          //opcode
+    string arg1;                                                        //argument 1
+    string arg2;                                                        //argumnet 2
+    string result;                                                      //result 
+    //result = arg1 op arg2
+    quad(string, string, string, opcode);                               //generate a quad datastructure to store quad commands
 
-	// Constructors with default operation
-	quad (string res, string argA, string operation = "EQUAL", string argB = "");			
-	quad (string res, int argA, string operation = "EQUAL", string argB = "");				
-	quad (string res, float argA, string operation = "EQUAL", string argB = "");	
-
-	void print ();                      // Print Quad Function
+    string print_TAC();                                                 //print TAC code in appropriate format
 };
 
-// Array of Quads
-class quadArray {
+class quad_TAC_arr {
 public:
-	vector <quad> qArray;		                // Vector of quads
+    vector<quad> TAC_quad_list;//list of TAC codes which would be printed afterwards at one go
 
-	void print ();								// Print the quadArray
+    void print_TAC();
 };
 
-// Element of the symbol table - symbols
-class sym {
+
+//param class will be used to define parameters of function
+class param {
 public:
-	string name;				// Name of the symbol
-	symtype *type;				// Type of the Symbol - Pointer
-	string initial_value;		// Symbol initial valus (if any)
-	int size;					// Size of the symbol
-	int offset;					// Offset of symbol
-	symtable* nested;			// Pointer to nested symbol table
-
-	sym (string name, string t="INTEGER", symtype* ptr = NULL, int width = 0);  // Constructor declaration
-	sym* update(symtype * t); 	// A method to update different fields of an existing entry
-	sym* link_to_symbolTable(symtable* t);
+    string name;                //name of parameter
+    ST_entry_type type;         //type of parameter
 };
 
-// Symbol Table Class
-class symtable {
+
+class expression {
 public:
-	string name;				    // Name of the symbol table
-	int count;					    // Count of temporary variables
-	list <sym> currTable; 			// The table of symbols
-	symtable* parent;				// Immediate parent of the symbol table
+    int instr;                  //instruction number
+    data_dtype type;            //type of instruction i.e. bool or non bool
+    string location;            //location of the expression in symbol table
+    list<int> truelist;         //truelist i.e. list of intructions that will jump to label if the expression evaluated to true
+    list<int> falselist;        //falselist 
+    list<int> nextlist;         //nextlist
+    int order_dim;              //order_dim to keep track of dimension of arrays and pointers
+    string* store_addr;         //store_addr keeps a track of expression address whose address is provided in case expression is of type array or pointer
 
-	symtable (string name="NULL");							// Constructor
-	sym* lookup (string name);								// Lookup for a symbol in symbol table
-	void print();					            			// Print the symbol table
-	void update();						        			// Update offset of the complete symbol table
+    expression();               //constructor for expression
 };
 
 
-//Attributes and their explanation for different non terminal type
-
-//Attributes for statements
-struct statement {
-	list <int> nextlist;				// Nextlist for statement
+class declaration 
+{ //declaration class
+public:
+    string name;                    //name of declaration
+    int pointers;                   //number of pointers in the declaration 
+    data_dtype type;                //data type of all the elements present in the declaration
+    data_dtype next_elem_type;      //next element type would be relevant in case data type of declaration is array or pointer
+    
+    //next element type would contain data type of elements in array/pointer
+    vector<int> li;                 //list of instructions for the declaration
+    expression* initial_value;      //initial value of the declaration
+    int pc;                         //to be used in pointers and array
 };
 
-//Attributes for array
-struct array1 {
-	string cat;
-	sym* loc;					// Temporary used for computing array address
-	sym* array1;				// Pointer to symbol table
-	symtype* type;				// type of the subarray generated
-};
+
+//to generate a tac code with different number of parameters
+void add_TAC(string result, string arg1, string arg2, opcode op);
+void add_TAC(string result, int constant, opcode op);
+void add_TAC(string result, char constant, opcode op);
+void add_TAC(string result, float constant, opcode op);
 
 
-//Attributes for expressions
-struct expr {
-	string type; 							//to store whether the expression is of type int or bool
-
-	// Valid for non-bool type
-	sym* loc;								// Pointer to the symbol table entry
-
-	// Valid for bool type
-	list <int> truelist;						// Truelist valid for boolean
-	list <int> falselist;					// Falselist valid for boolean expressions
-
-	// Valid for statement expression
-	list <int> nextlist;
-};
-
-/*      Global functions required for the translator        */
-
-void emit(string op, string answer, string argA="", string argB = "");    //emits for adding quads to quadArray
-void emit(string op, string answer, int argA, string argB = "");		  //emits for adding quads to quadArray (argA is int)
-void emit(string op, string answer, float argA, string argB = "");        //emits for adding quads to quadArray (argA is float)
+/*
+    to create a new list containing only i, an index into the array of quads, 
+    and to return a pointer to the newly created list
+*/
+list<int> makelist(int i);
 
 
-sym* conv (sym*, string);							// TAC for Type conversion in program
-bool typecheck(sym* &s1, sym* &s2);					// Checks if two symbols have same type
-bool typecheck(symtype* t1, symtype* t2);			// Checks if two symtype objects have same type
+//to concatenate two lists and return a pointer to the concatenated list
+list<int> merge_list(list<int> list1, list<int> list2);
 
 
-void backpatch (list <int> lst, int i);
-list<int> makelist (int i);							        // Make a new list contaninig an integer
-list<int> merge (list<int> &lst1, list <int> &lst2);		// Merge two lists into a single list
+    //inserts l as target label for each of the quads on the list pointed by address
 
-expr* convertInt2Bool (expr*);				// convert any expression (int) to bool
-expr* convertBool2Int (expr*);				// convert bool to expression (int)
 
-void changeTable (symtable* newtable);              // for changing the current sybol table
-int nextinstr();									// Returns the next instruction number
+void backpatch(list<int> l, int address);
 
-sym* gentemp (symtype* t, string init = "");		// Generate a temporary variable and insert it in current symbol table
 
-int size_type (symtype*);							// Calculate size of any symbol type 
-string print_type(symtype*);						// For printing type of symbol recursive printing of type
+//Converts a symbol of one type to another and returns a pointer to the new symbol
+void convertToType(expression* arg, expression* res, data_dtype toType);
+void convertToType(string t, data_dtype to, string f, data_dtype from);
+
+
+void convert_int_bool(expression* expr);    //int to bool
+
+int sizeof_dtype(data_dtype t);             //returns size of data types
+
+
+string typecheck(ST_entry_type t);          //to check type of variable 
+
+string get_initial(ST_entry* sym);          //to get intial value of symbol
 
 #endif
