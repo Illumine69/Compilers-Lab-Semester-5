@@ -184,26 +184,61 @@ void generate_assembly(quad q, ofstream& sfile) {
 
     // If quad operation is an assigment operation
     if(q.op == ASSIGN) {
-        if(q.result[0] != 't' || location3->type.type == INT || location3->type.type == POINTER) {
-            if(location3->type.type != POINTER) {
-                if(q.arg1[0] < '0' || q.arg1[0] > '9')
-                {
-                    sfile << "\tmovl\t" << toPrint1 << ", %eax" << endl;
-                    sfile << "\tmovl\t%eax, " << toPrintRes << endl; 
+
+
+        if(!isFloat)
+
+        {
+            if(q.result[0] != 't' || location3->type.type == INT || location3->type.type == POINTER) {
+                if(location3->type.type != POINTER) {
+                    if(q.arg1[0] < '0' || q.arg1[0] > '9')
+                    {
+                        sfile << "\tmovl\t" << toPrint1 << ", %eax" << endl;
+                        sfile << "\tmovl\t%eax, " << toPrintRes << endl; 
+                    }
+                    else
+                        sfile << "\tmovl\t$" << q.arg1 << ", " << toPrintRes << endl;
                 }
-                else
-                    sfile << "\tmovl\t$" << q.arg1 << ", " << toPrintRes << endl;
+                else {
+                    sfile << "\tmovq\t" << toPrint1 << ", %rax" << endl;
+                    sfile << "\tmovq\t%rax, " << toPrintRes << endl; 
+                }
             }
             else {
-                sfile << "\tmovq\t" << toPrint1 << ", %rax" << endl;
-                sfile << "\tmovq\t%rax, " << toPrintRes << endl; 
+                int temp = q.arg1[0];
+                sfile << "\tmovb\t$" << temp << ", " << toPrintRes << endl;
             }
-        }
-        else {
-            int temp = q.arg1[0];
-            sfile << "\tmovb\t$" << temp << ", " << toPrintRes << endl;
-        }
+
     }
+    else {
+
+        if(q.result[0] != 't' || location3->type.type == FLOAT || location3->type.type == POINTER) {
+                if(location3->type.type != POINTER) {
+                    if(q.arg1[0] < '0' || q.arg1[0] > '9')
+                    {
+                        sfile << "\tmovss\t" << toPrint1 << ", %xmm0" << endl;
+                        sfile << "\tmovss\t%xmm0, " << toPrintRes << endl; 
+                    }
+                    else
+                        sfile << "\tmovss\t$" << q.arg1 << ", " << toPrintRes << endl;
+                }
+                else {
+                    sfile << "\tmovq\t" << toPrint1 << ", %rax" << endl;
+                    sfile << "\tmovq\t%rax, " << toPrintRes << endl; 
+                }
+            }
+            else {
+                int temp = q.arg1[0];
+                sfile << "\tmovss\t$" << temp << ", " << toPrintRes << endl;
+            }
+
+
+
+
+    }
+
+
+ }
 
     // If quad operation is Unary Minus
     else if(q.op == U_MINUS) {
