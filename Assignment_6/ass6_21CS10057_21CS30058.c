@@ -174,6 +174,67 @@ float readFlt(float* f){
     return ans;
 }
 
+
+
+float converttoFlt(string s){
+    int integralPart = 0;
+    float decimalPart = 0;
+    int len;
+     string buff =s;
+     int len=buff.size();
+    int sign = 1;
+    int i = 0;
+
+    
+    if(len <= 0){
+        return ERR;
+    }
+    if(buff[0] == '-'){
+        sign = -1;
+        i++;
+        if(len == 1){        // If only '-' is given
+            return ERR;
+        }
+    }
+    else if((buff[0] < '0' || buff[0] > '9') && buff[0] != '.'){    // If the first character is not a digit or a decimal point
+        return ERR;
+    }
+    len--;
+    while(i < len  && buff[i] != '.'){
+        if(buff[i] >= '0' && buff[i] <= '9'){
+            integralPart *= 10;
+            integralPart += buff[i] - '0';
+        }
+        else{
+            return ERR;
+        }
+        i++;
+    }
+    if(buff[i] == '.'){
+        if(len == 1 || (len == 2 && sign == -1)){   // If only '.' or '-.' is given
+            return ERR;
+        }
+        i++;
+        int ten = 10;
+        while(i < len){
+            if(buff[i] >= '0' && buff[i] <= '9'){
+                decimalPart += (float)(buff[i] - '0')/ten;      // Add the decimal part
+                ten *= 10;
+            }
+            else{
+                return ERR;
+            }
+            i++;
+        }
+    }
+    *f = (float)(integralPart + decimalPart)*sign;
+    float ans = *f;
+    *f = OK;
+    return ans;
+}
+
+
+
 int printFlt(float f){
     
     char buff[BUFF];
