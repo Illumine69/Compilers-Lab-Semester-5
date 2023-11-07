@@ -142,7 +142,7 @@ void generate_assembly(quad q, ofstream& sfile) {
     ST_entry* glb2 = ST_global.search_global_ST(q.arg2);
     ST_entry* glb3 = ST_global.search_global_ST(q.result);
 
-    bool isFloat =(location1->type.type==FLOAT)|(location2->type.type==FLOAT)|(location3->type.type==FLOAT)
+    bool isFloat =(location1->type.type==FLOAT)|(location2->type.type==FLOAT)|(location3->type.type==FLOAT);
 
     // If the local symbol table is not the same as global symbol table
     if(ST != &ST_global) {
