@@ -14,7 +14,6 @@ File: lex file
     #include "ass6_21CS10057_21CS30058_translator.h"
     #include "ass6_21CS10057_21CS30058.tab.h"
     
-     
 %}
 
 %option yylineno
@@ -22,7 +21,7 @@ File: lex file
 
 /* Regular Expression Definitions */
 
-identifier                      [_a-zA-Z][_a-zA-Z0-9]*
+IDENTIFIER                      [_a-zA-Z][_a-zA-Z0-9]*
 
 integer_constant                [1-9][0-9]*|[0]
 
@@ -31,7 +30,7 @@ exponent                        [eE]([+-]?){digits}
 fractional_constant             ({digits}?\.{digits})|({digits}\.)
 floating_constant               ({fractional_constant}{exponent}?)|({digits}{exponent})
 
-enum_constant                   {identifier}
+enum_constant                   {IDENTIFIER}
 
 escape_sequence                 \\['"?\\abfnrtv]
 c_char                          [^\'\\\n]|{escape_sequence}
@@ -102,7 +101,7 @@ ws                              [ \t\n]
 <multi_line>.                   {  }
 <multi_line>\n                  {  }
 
-{identifier}                    { yylval.str = new string(yytext); return IDENTIFIER; }
+{IDENTIFIER}                    { yylval.str = new string(yytext); return IDENTIFIER; }
 {integer_constant}              { yylval.intval = atoi(yytext); return INTEGER_CONSTANT; }
 {floating_constant}             { yylval.floatval = atof(yytext); return FLOATING_CONSTANT; }
 {char_constant}            { yylval.charval = yytext[1]; return CHAR_CONSTANT; }
