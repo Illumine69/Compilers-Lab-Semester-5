@@ -48,8 +48,8 @@ test: compiler.out libass6_21CS10057_21CS30058.a
 	gcc outputs/ass6_21CS10057_21CS30058_5.s -o binary_target/test5 -L. -lass6_21CS10057_21CS30058 -no-pie
 
 	./compiler 6 < inputs/float_check.c> outputs/ass6_21CS10057_21CS30058_TAC_6.out
-	mv ass6_21CS10057_21CS30058_6.s outputs/ass6_21CS10057_21CS30058_5.s
-	gcc outputs/ass6_21CS10057_21CS30058_5.s -o binary_target/test5 -L. -lass6_21CS10057_21CS30058 -no-pie
+	mv ass6_21CS10057_21CS30058_6.s outputs/ass6_21CS10057_21CS30058_6.s
+	gcc outputs/ass6_21CS10057_21CS30058_6.s -o binary_target/test6 -L. -lass6_21CS10057_21CS30058 -no-pie
 
 	@echo "\n-------------------------------------------------------------------"
 	@echo "Testing finished! binaries are available in binary_target folder"
