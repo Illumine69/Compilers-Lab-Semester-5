@@ -60,6 +60,11 @@ test: tiny_parser.out libass6_21CS10057_21CS30058.a
 	mv ass6_21CS10057_21CS30058_5.s outputs/ass6_21CS10057_21CS30058_5.s
 	gcc -c outputs/ass6_21CS10057_21CS30058_5.s -o outputs/ass6_21CS10057_21CS30058_5.o
 	gcc outputs/ass6_21CS10057_21CS30058_5.o -o binary_target/test5 -L. -lass6_21CS10057_21CS30058 -no-pie
+
+	./tiny_parser.out 6 < inputs/float_check.c > outputs/float_check_TAC.out
+	mv ass6_21CS10057_21CS30058_6.s outputs/ass6_21CS10057_21CS30058_6.s
+	gcc -c outputs/ass6_21CS10057_21CS30058_6.s -o outputs/ass6_21CS10057_21CS30058_6.o
+	gcc outputs/ass6_21CS10057_21CS30058_6.o -o binary_target/float_check -L. -lass6_21CS10057_21CS30058 -no-pie
 	
 clean:
 	rm -f lex.yy.c *.tab.c *.tab.h *.output *.o *.s *.a *.out *.gch tiny_parser.out outputs/* binary_target/*

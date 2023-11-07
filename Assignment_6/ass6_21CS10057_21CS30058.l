@@ -21,32 +21,32 @@ File: lex file
 
 /* Regular Expression Definitions */
 
+SPACE                           [ \t\n]
 IDENTIFIER                      [_a-zA-Z][_a-zA-Z0-9]*
 
-integer_constant                [1-9][0-9]*|[0]
+INTEGER_CONSTANT                [1-9][0-9]*|[0]
 
-digits                          [0-9]+
-exponent                        [eE]([+-]?){digits}
-fractional_constant             ({digits}?\.{digits})|({digits}\.)
-floating_constant               ({fractional_constant}{exponent}?)|({digits}{exponent})
+DIGITS                          [0-9]+
+EXPONENT                        [eE]([+-]?){DIGITS}
+FRACTIONAL_CONSTANT             ({DIGITS}?\.{DIGITS})|({DIGITS}\.)
+FLOATING__CONSTANT              ({FRACTIONAL_CONSTANT}{EXPONENT}?)|({DIGITS}{EXPONENT})
 
-enum_constant                   {IDENTIFIER}
+ENUMERATION_CONSTANT            {IDENTIFIER}
 
-escape_sequence                 \\['"?\\abfnrtv]
-c_char                          [^\'\\\n]|{escape_sequence}
-c_char_sequence                 {c_char}+
-char_constant                   \'({c_char_sequence})\'
+ESCAPE_SEQUENCE                 \\['"?\\abfnrtv]
+C_CHAR                          [^\'\\\n]|{ESCAPE_SEQUENCE}
+C_CHAR_SEQUENCE                 {C_CHAR}+
+CHARACTER_CONSTANT              \'({C_CHAR_SEQUENCE})\'
 
-constant                        {integer_constant}|{floating_constant}|{enum_constant}|{char_constant}
+CONSTANT                        {INTEGER_CONSTANT}|{FLOATING__CONSTANT}|{ENUMERATION_CONSTANT}|{CHARACTER_CONSTANT}
 
-s_char                          [^\"\\\n]|{escape_sequence}
-s_char_sequence                 {s_char}+
-string_literal                  \"({s_char_sequence}?)\"
+S_CHAR                          [^\"\\\n]|{ESCAPE_SEQUENCE}
+S_CHAR_SEQUENCE                 {S_CHAR}+
+STRING_LITERAL                  \"({S_CHAR_SEQUENCE}?)\"
 
-ws                              [ \t\n]
 
-%x single_line
-%x multi_line
+%x COMMENT_Single
+%x COMMENT_Multi
 
 /* Translation_rules */
 %%
@@ -91,22 +91,22 @@ ws                              [ \t\n]
 
 
 
-"//"                            { BEGIN(single_line); }
-<single_line>.                  {  }
-<single_line>\n                 { BEGIN(INITIAL); }
-<single_line><<EOF>>            { BEGIN(INITIAL); }
+"//"                            { BEGIN(COMMENT_Single); }
+<COMMENT_Single>.               {  }
+<COMMENT_Single>\n              { BEGIN(INITIAL); }
+<COMMENT_Single><<EOF>>         { BEGIN(INITIAL); }
 
-"/*"                            { BEGIN(multi_line); }
-<multi_line>"*/"                { BEGIN(INITIAL); }
-<multi_line>.                   {  }
-<multi_line>\n                  {  }
+"/*"                            { BEGIN(COMMENT_Multi); }
+<COMMENT_Multi>"*/"             { BEGIN(INITIAL); }
+<COMMENT_Multi>.                {  }
+<COMMENT_Multi>\n               {  }
 
 {IDENTIFIER}                    { yylval.str = new string(yytext); return IDENTIFIER; }
-{integer_constant}              { yylval.intval = atoi(yytext); return INTEGER_CONSTANT; }
-{floating_constant}             { yylval.floatval = atof(yytext); return FLOATING_CONSTANT; }
-{char_constant}            { yylval.charval = yytext[1]; return CHAR_CONSTANT; }
-{string_literal}                { yylval.str = new string(yytext); return STRING_LITERAL; }
-{ws}                         {}
+{INTEGER_CONSTANT}              { yylval.intval = atoi(yytext); return INTEGER_CONSTANT; }
+{FLOATING__CONSTANT}            { yylval.floatval = atof(yytext); return FLOATING_CONSTANT; }
+{CHARACTER_CONSTANT}            { yylval.charval = yytext[1]; return CHAR_CONSTANT; }
+{STRING_LITERAL}                { yylval.str = new string(yytext); return STRING_LITERAL; }
+{SPACE}                         {  }
 
 
 "["                             { return LEFT_SQUARE; }
@@ -156,6 +156,5 @@ ws                              [ \t\n]
 "|="                            { return BITWISE_OR_ASSIGN; }
 ","                             { return COMMA; }
 "#"                             { return HASH; }
-
 
 %%

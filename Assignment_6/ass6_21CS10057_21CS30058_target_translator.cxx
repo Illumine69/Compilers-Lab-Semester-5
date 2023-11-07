@@ -60,6 +60,21 @@ void output_global_info(ofstream& sfile) {
             else
                 sfile << "\t.comm\t" << sym->name << ",4,4" << endl;
         }
+        // If object type is 'FLOAT'
+        else if(sym->type.type == FLOAT && sym->name[0] != 't') {
+            // If initialised
+            if(sym->initial_value != NULL) {
+                sfile << "\t.globl\t" << sym->name << endl;
+                sfile << "\t.data" << endl;
+                sfile << "\t.align\t4" << endl;
+                sfile << "\t.type\t" << sym->name << ", @object" << endl;
+                sfile << "\t.size\t" << sym->name << ", 4" << endl;
+                sfile << sym->name << ":" << endl;
+                sfile << "\t.long\t" << sym->initial_value->i << endl;
+            }
+            else
+                sfile << "\t.comm\t" << sym->name << ",4,4" << endl;
+        }
     }
 }
 

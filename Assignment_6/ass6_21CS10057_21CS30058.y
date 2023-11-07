@@ -1,14 +1,25 @@
+/*
+Name: Sanskar Mittal              Roll No:   21CS10057
+Name: Voddula Karthik Reddy       Roll No:   21CS30058
+Semester: 5th
+Assignment 6: Target Code Generator for tinyC
+File: yacc file
+*/
+
+
 %{
     #include <iostream>
+    #include <string.h>
+    #include <string>
+    #include <stdio.h>
+    #include <sstream>
+    #include <cstdlib>
     #include "ass6_21CS10057_21CS30058_translator.h"
     using namespace std;
 
-    //from lexer
     extern int yylex();                     
     extern char* yytext;                    
     extern int yylineno;                    
-
-    //to report error in bison
     void yyerror(string s);                 
 
     //to keep track of global data structures shared across all files
@@ -43,12 +54,90 @@
 /*
     All tokens
 */
-%token AUTO BREAK CASE CHAR_ CONST CONTINUE DEFAULT DO DOUBLE ELSE ENUM EXTERN FLOAT_ FOR GOTO_ IF INLINE INT_ LONG REGISTER RESTRICT RETURN_ SHORT SIGNED SIZEOF STATIC STRUCT SWITCH TYPEDEF UNION UNSIGNED VOID_ VOLATILE WHILE BOOL_ COMPLEX IMAGINARY
-%token LEFT_SQUARE RIGHT_SQUARE LEFT_PARENTHESIS RIGHT_PARENTHESIS LEFT_CURLY RIGHT_CURLY 
-%token DOT ARROW SELF_INCREASE SELF_DECREASE BITWISE_AND MUL PLUS SUBTRACT BITWISE_NOR EXCLAMATION F_SLASH MODULO 
-%token LEFT_SHIFT RIGHT_SHIFT LESS_THAN GREATER_THAN LESS_THAN_EQUAL GREATER_THAN_EQUAL EQUAL NOT_EQUAL BITWISE_XOR BITWISE_OR 
-%token LOGICAL_AND LOGICAL_OR QUESTION_MARK COLON SEMICOLON ELLIPSIS 
-%token ASSIGN_ MUL_ASSIGN F_SLASH_ASSIGN MODULO_ASSIGN PLUSASSIGN SUBTRACT_ASSIGN LEFT_SHIFT_ASSIGN RIGHT_SHIFT_ASSIGN BITWISE_AND_ASSIGN BITWISE_XOR_ASSIGN BITWISE_OR_ASSIGN COMMA HASH
+%token AUTO 
+%token BREAK 
+%token CASE 
+%token CHAR_ 
+%token CONST 
+%token CONTINUE 
+%token DEFAULT 
+%token DO 
+%token DOUBLE 
+%token ELSE 
+%token ENUM 
+%token EXTERN 
+%token FLOAT_ 
+%token FOR 
+%token GOTO_ 
+%token IF 
+%token INLINE 
+%token INT_ 
+%token LONG 
+%token REGISTER 
+%token RESTRICT 
+%token RETURN_ 
+%token SHORT 
+%token SIGNED 
+%token SIZEOF 
+%token STATIC 
+%token STRUCT 
+%token SWITCH 
+%token TYPEDEF 
+%token UNION 
+%token UNSIGNED 
+%token VOID_ 
+%token VOLATILE 
+%token WHILE 
+%token BOOL_ 
+%token COMPLEX 
+%token IMAGINARY
+%token LEFT_SQUARE 
+%token RIGHT_SQUARE 
+%token LEFT_PARENTHESIS 
+%token RIGHT_PARENTHESIS 
+%token LEFT_CURLY 
+%token RIGHT_CURLY 
+%token DOT 
+%token ARROW 
+%token SELF_INCREASE 
+%token SELF_DECREASE 
+%token BITWISE_AND 
+%token MUL 
+%token PLUS 
+%token SUBTRACT 
+%token BITWISE_NOR 
+%token EXCLAMATION 
+%token F_SLASH 
+%token MODULO 
+%token LEFT_SHIFT 
+%token RIGHT_SHIFT 
+%token LESS_THAN 
+%token GREATER_THAN 
+%token LESS_THAN_EQUAL 
+%token GREATER_THAN_EQUAL 
+%token EQUAL 
+%token NOT_EQUAL 
+%token BITWISE_XOR 
+%token BITWISE_OR 
+%token LOGICAL_AND 
+%token LOGICAL_OR 
+%token QUESTION_MARK 
+%token COLON
+%token SEMICOLON 
+%token ELLIPSIS 
+%token ASSIGN_ 
+%token MUL_ASSIGN 
+%token F_SLASH_ASSIGN 
+%token MODULO_ASSIGN 
+%token PLUSASSIGN 
+%token SUBTRACT_ASSIGN 
+%token LEFT_SHIFT_ASSIGN 
+%token RIGHT_SHIFT_ASSIGN 
+%token BITWISE_AND_ASSIGN 
+%token BITWISE_XOR_ASSIGN 
+%token BITWISE_OR_ASSIGN 
+%token COMMA 
+%token HASH
 
 // identifier
 %token <str> IDENTIFIER
@@ -128,15 +217,13 @@
 %%
 
 primary_expression: 
-        IDENTIFIER
-        {
+        IDENTIFIER {
             $$ = new expression();                      // new expression node
             string s = *($1);
             ST->search_lexeme(s);                       //store the identifier in symbol table
             $$->location = s;                           // s now points to the pointer to symbol table entry
         }
-        | INTEGER_CONSTANT
-        {
+        | INTEGER_CONSTANT {
             $$ = new expression();                  // new expression node
             $$->location = ST->generate_tem_var(INT);             // create a temporary variable to store the value
             add_TAC($$->location, $1, ASSIGN);          //create a TAC quad to assign the value of constant to temporary variable
@@ -144,8 +231,7 @@ primary_expression:
             val->initialize($1);                        // intialise 
             ST->search_lexeme($$->location)->initial_value = val;     // update the intial value of temporary variable
         }
-        | FLOATING_CONSTANT
-        {
+        | FLOATING_CONSTANT {
             $$ = new expression();                  // new expression node
             $$->location = ST->generate_tem_var(FLOAT);           //create a temporary variable to store the value
             add_TAC($$->location, $1, ASSIGN);          //create a TAC quad to assign the value of constant to temporary variable
@@ -153,8 +239,7 @@ primary_expression:
             val->initialize($1);                    // // intialise 
             ST->search_lexeme($$->location)->initial_value = val;      // update the intial value of temporary variable
         }
-        | CHAR_CONSTANT
-        {
+        | CHAR_CONSTANT {
             $$ = new expression();                  // new expression node
             $$->location = ST->generate_tem_var(CHAR);            //create a temporary variable to store the value
             add_TAC($$->location, $1, ASSIGN);  //create a TAC quad to assign the value of constant to temporary variable
@@ -162,24 +247,22 @@ primary_expression:
             val->initialize($1);                    // intialise 
             ST->search_lexeme($$->location)->initial_value = val;      // update the intial value of temporary variable
         }
-        | STRING_LITERAL
-        {
+        | STRING_LITERAL {
             $$ = new expression();                          // new expression node
             $$->location = ".LC" + to_string(num_strings++);//create a new string label with prefix LC that indicates string parameters in .s files
             f_strings.push_back(*($1));          // update the number of strings, that will be used in naming label 
                                                         //add the string to set of string constants
         }
-        | LEFT_PARENTHESIS expression RIGHT_PARENTHESIS
-        {
+        | LEFT_PARENTHESIS expression RIGHT_PARENTHESIS {
             $$ = $2;                                // copy content from right to left
         }
         ;
 
 postfix_expression: 
-        primary_expression
-        {}
-        | postfix_expression LEFT_SQUARE expression RIGHT_SQUARE
-        {
+        primary_expression {
+
+        }
+        | postfix_expression LEFT_SQUARE expression RIGHT_SQUARE {
             //to compute address of array
             ST_entry_type to = ST->search_lexeme($1->location)->type;      // extract the type of variable
             string f = "";
@@ -196,16 +279,14 @@ postfix_expression:
             add_TAC(f, temp, "", ASSIGN);                           //f = t
             $$ = $1;
         }
-        | postfix_expression LEFT_PARENTHESIS RIGHT_PARENTHESIS
-        {  
+        | postfix_expression LEFT_PARENTHESIS RIGHT_PARENTHESIS {  
              
             //function call with the function name no parameter
             symbol_table* function_ST = ST_global.search_lexeme($1->location)->nested_symbol_table;
             add_TAC($1->location, "0", "", CALL);   //call func_name, 0
         
         }
-        | postfix_expression LEFT_PARENTHESIS argument_expression_list RIGHT_PARENTHESIS
-        {   
+        | postfix_expression LEFT_PARENTHESIS argument_expression_list RIGHT_PARENTHESIS {   
 
             //function call with the function name and parameter list
             symbol_table* function_ST = ST_global.search_lexeme($1->location)->nested_symbol_table;
@@ -227,12 +308,13 @@ postfix_expression:
                 $$->location = return_value;                                              
             }
         }
-        | postfix_expression DOT IDENTIFIER
-        {}
-        | postfix_expression ARROW IDENTIFIER
-        {}
-        | postfix_expression SELF_INCREASE
-        {   
+        | postfix_expression DOT IDENTIFIER {
+
+        }
+        | postfix_expression ARROW IDENTIFIER {
+            
+        }
+        | postfix_expression SELF_INCREASE {   
             //for a++: t = a, a = t + 1
             $$ = new expression();                                                          // new expression node
             ST_entry_type t = ST->search_lexeme($1->location)->type;                       // generate a temporary vraiable of the same type as of the varible
@@ -257,8 +339,7 @@ postfix_expression:
                 add_TAC($1->location, $1->location, "1", ADD);                           // then update the value by 1
             }
         }
-        | postfix_expression SELF_DECREASE
-        {
+        | postfix_expression SELF_DECREASE {
             //follow similar to self increment
             $$ = new expression();                                          // new expression node
             $$->location = ST->generate_tem_var(ST->search_lexeme($1->location)->type.type);          // Generate a new temporary variable
@@ -277,23 +358,23 @@ postfix_expression:
                 add_TAC($1->location, $1->location, "1", SUB);                           // the update the value by decreasing by 1
             }
         }
-        | LEFT_PARENTHESIS type_name RIGHT_PARENTHESIS LEFT_CURLY initializer_list RIGHT_CURLY
-        {}
-        | LEFT_PARENTHESIS type_name RIGHT_PARENTHESIS LEFT_CURLY initializer_list COMMA RIGHT_CURLY
-        {}
+        | LEFT_PARENTHESIS type_name RIGHT_PARENTHESIS LEFT_CURLY initializer_list RIGHT_CURLY {
+
+        }
+        | LEFT_PARENTHESIS type_name RIGHT_PARENTHESIS LEFT_CURLY initializer_list COMMA RIGHT_CURLY {
+
+        }
         ;
 
 argument_expression_list: 
-        assignment_expression
-        {
+        assignment_expression {
             param* first = new param();                     // Create a new parameter
             first->name = $1->location;                     //param would point to the symbol tabel entry of the parameter
             first->type = ST->search_lexeme($1->location)->type;//set the type of parameter
             $$ = new vector<param*>;
             $$->push_back(first);                       // Add the parameter to the list to keep track of all parameters
         }
-        | argument_expression_list COMMA assignment_expression
-        {
+        | argument_expression_list COMMA assignment_expression {
             //if there are more than first_operand parameters
             param* next = new param();                  // Create a new parameter
             next->name = $3->location;                  //set type and name of parameter
@@ -304,10 +385,10 @@ argument_expression_list:
         ;
 
 unary_expression: 
-        postfix_expression
-        {}
-        | SELF_INCREASE unary_expression
-        {
+        postfix_expression {
+
+        }
+        | SELF_INCREASE unary_expression {
             $$ = new expression();
             ST_entry_type type = ST->search_lexeme($2->location)->type;
             if(type.type == ARRAY) {
@@ -324,8 +405,7 @@ unary_expression:
             $$->location = ST->generate_tem_var(ST->search_lexeme($2->location)->type.type);
             add_TAC($$->location, $2->location, "", ASSIGN);                         // Assign the updated value to $$
         }
-        | SELF_DECREASE unary_expression
-        {
+        | SELF_DECREASE unary_expression {
             $$ = new expression();
             ST_entry_type type = ST->search_lexeme($2->location)->type;
             if(type.type == ARRAY) {
@@ -341,8 +421,7 @@ unary_expression:
             }
             add_TAC($$->location, $2->location, "", ASSIGN);                         // Assign the updated value to $$
         }
-        | unary_operator cast_expression
-        {
+        | unary_operator cast_expression {
             // handle different unary operator using switch
             
             switch($1) {
@@ -386,44 +465,42 @@ unary_expression:
             */
 
         }
-        | SIZEOF unary_expression
-        {}
-        | SIZEOF LEFT_PARENTHESIS type_name RIGHT_PARENTHESIS
-        {}
+        | SIZEOF unary_expression {
+
+        }
+        | SIZEOF LEFT_PARENTHESIS type_name RIGHT_PARENTHESIS {
+
+        }
         ;
 
 unary_operator:
-        BITWISE_AND
-        {
+        BITWISE_AND {
             $$ = '&';
         }
-        | MUL
-        {
+        | MUL {
             $$ = '*';
         }
-        | PLUS
-        {
+        | PLUS {
             $$ = '+';
         }
-        | SUBTRACT
-        {
+        | SUBTRACT {
             $$ = '-';
         }
-        | BITWISE_NOR
-        {
+        | BITWISE_NOR {
             $$ = '~';
         }
-        | EXCLAMATION
-        {
+        | EXCLAMATION {
             $$ = '!';
         }
         ;
 
 cast_expression: 
-        unary_expression
-        {}
-        | LEFT_PARENTHESIS type_name RIGHT_PARENTHESIS cast_expression
-        {}
+        unary_expression {
+
+        }
+        | LEFT_PARENTHESIS type_name RIGHT_PARENTHESIS cast_expression {
+
+        }
         ;
 
 /*
@@ -435,8 +512,7 @@ else for normal variables directly assign the values
 
 
 multiplicative_expression: 
-        cast_expression
-        {
+        cast_expression {
             $$ = new expression();                                  // Generate new expression
             ST_entry_type tp = ST->search_lexeme($1->location)->type;
             if(tp.type == ARRAY) {                                      // If the type is an array
@@ -455,8 +531,7 @@ multiplicative_expression:
             else
                 $$ = $1;            // copy content from right to left
         }
-        | multiplicative_expression MUL cast_expression
-        {   
+        | multiplicative_expression MUL cast_expression {   
             // Indicates multiplication
             // Arithmetic operation requires both the operands to be of compatible type 
             $$ = new expression();
@@ -486,8 +561,7 @@ multiplicative_expression:
             $$->location = ST->generate_tem_var(final);                       // Store the final result in a temporary
             add_TAC($$->location, $1->location, $3->location, MULT);
         }
-        | multiplicative_expression F_SLASH cast_expression
-        {
+        | multiplicative_expression F_SLASH cast_expression {
             // Indicates division
             $$ = new expression();
             ST_entry* first_operand = ST->search_lexeme($1->location);                  // Get the first operand from the ST_entry table
@@ -515,8 +589,7 @@ multiplicative_expression:
             $$->location = ST->generate_tem_var(final);                       // Store the final result in a temporary
             add_TAC($$->location, $1->location, $3->location, DIV);
         }
-        | multiplicative_expression MODULO cast_expression
-        {
+        | multiplicative_expression MODULO cast_expression {
             // Indicates modulo
             $$ = new expression();
             ST_entry* first_operand = ST->search_lexeme($1->location);                  // Get the first operand from the ST_entry table
@@ -549,10 +622,10 @@ multiplicative_expression:
         ;
 
 additive_expression: 
-        multiplicative_expression
-        {}
-        | additive_expression PLUS multiplicative_expression
-        {   
+        multiplicative_expression {
+
+        }
+        | additive_expression PLUS multiplicative_expression {   
             // Indicates addition
             $$ = new expression();
             ST_entry* first_operand = ST->search_lexeme($1->location);                  // Get the first operand from the ST_entry table
@@ -581,8 +654,7 @@ additive_expression:
             $$->location = ST->generate_tem_var(final);                       // Store the final result in a temporary
             add_TAC($$->location, $1->location, $3->location, ADD);
         }
-        | additive_expression SUBTRACT multiplicative_expression
-        {
+        | additive_expression SUBTRACT multiplicative_expression {
             // Indicates subtraction
             $$ = new expression();
             ST_entry* first_operand = ST->search_lexeme($1->location);                  // Get the first operand from the ST_entry table
@@ -613,10 +685,10 @@ additive_expression:
         ;
 
 shift_expression: 
-        additive_expression
-        {}
-        | shift_expression LEFT_SHIFT additive_expression
-        {
+        additive_expression {
+
+        }
+        | shift_expression LEFT_SHIFT additive_expression {
             // Indicates left shift
             $$ = new expression();
             ST_entry* first_operand = ST->search_lexeme($1->location);                  // Get the first operand from the ST_entry table
@@ -641,8 +713,7 @@ shift_expression:
             $$->location = ST->generate_tem_var(first_operand->type.type);              // data type remains the same after shifting
             add_TAC($$->location, $1->location, $3->location, SL);
         }
-        | shift_expression RIGHT_SHIFT additive_expression
-        {
+        | shift_expression RIGHT_SHIFT additive_expression {
             // Indicates right shift
             $$ = new expression();
             ST_entry* first_operand = ST->search_lexeme($1->location);                  // Get the first operand from the ST_entry table
@@ -676,10 +747,10 @@ boolean expressions have attributes truelist and falselist which will be backpat
 */
 
 relational_expression: 
-        shift_expression
-        {}
-        | relational_expression LESS_THAN shift_expression
-        {
+        shift_expression {
+
+        }
+        | relational_expression LESS_THAN shift_expression {
             $$ = new expression();
             ST_entry* first_operand = ST->search_lexeme($1->location);                      // Get the first operand from the ST_entry table
             ST_entry* second_operand = ST->search_lexeme($3->location);                     // Get the second operand from the ST_entry table
@@ -720,8 +791,7 @@ relational_expression:
         
         
         }
-        | relational_expression GREATER_THAN shift_expression
-        {
+        | relational_expression GREATER_THAN shift_expression {
             $$ = new expression();
             ST_entry* first_operand = ST->search_lexeme($1->location);                  // Get the first operand from the ST_entry table
             ST_entry* second_operand = ST->search_lexeme($3->location);                  // Get the second operand from the ST_entry table
@@ -758,8 +828,7 @@ relational_expression:
                 in+3: goto (to be backpatched)
             */
         }
-        | relational_expression LESS_THAN_EQUAL shift_expression
-        {
+        | relational_expression LESS_THAN_EQUAL shift_expression {
             $$ = new expression();
             ST_entry* first_operand = ST->search_lexeme($1->location);                  // Get the first operand from the ST_entry table
             ST_entry* second_operand = ST->search_lexeme($3->location);                  // Get the second operand from the ST_entry table
@@ -797,8 +866,7 @@ relational_expression:
         
         
         }
-        | relational_expression GREATER_THAN_EQUAL shift_expression
-        {
+        | relational_expression GREATER_THAN_EQUAL shift_expression {
             $$ = new expression();
             ST_entry* first_operand = ST->search_lexeme($1->location);                  // Get the first operand from the ST_entry table
             ST_entry* second_operand = ST->search_lexeme($3->location);                  // Get the second operand from the ST_entry table
@@ -838,13 +906,11 @@ relational_expression:
         ;
 
 equality_expression: 
-        relational_expression
-        {
+        relational_expression {
             $$ = new expression();
             $$ = $1;                // copy content from right to left
         }
-        | equality_expression EQUAL relational_expression
-        {
+        | equality_expression EQUAL relational_expression {
             $$ = new expression();
             ST_entry* first_operand = ST->search_lexeme($1->location);                  // Get the first operand from the ST_entry table
             ST_entry* second_operand = ST->search_lexeme($3->location);                  // Get the second operand from the ST_entry table
@@ -881,8 +947,7 @@ equality_expression:
             */
         
         }
-        | equality_expression NOT_EQUAL relational_expression
-        {
+        | equality_expression NOT_EQUAL relational_expression {
             $$ = new expression();
             ST_entry* first_operand = ST->search_lexeme($1->location);                  // Get the first operand from the ST_entry table
             ST_entry* second_operand = ST->search_lexeme($3->location);                  // Get the second operand from the ST_entry table
@@ -927,10 +992,10 @@ a new temporary variable is generated to store the result of the intermediate op
 */
 
 and_expression: 
-        equality_expression
-        {}
-        | and_expression BITWISE_AND equality_expression
-        {
+        equality_expression {
+
+        }
+        | and_expression BITWISE_AND equality_expression {
             $$ = new expression();
             ST_entry* first_operand = ST->search_lexeme($1->location);                  // Get the first operand from the ST_entry table
             ST_entry* second_operand = ST->search_lexeme($3->location);                  // Get the second operand from the ST_entry table
@@ -958,12 +1023,10 @@ and_expression:
         ;
 
 exclusive_or_expression: 
-        and_expression
-        {
+        and_expression {
             $$ = $1;    // copy content from right to left
         }
-        | exclusive_or_expression BITWISE_XOR and_expression
-        {
+        | exclusive_or_expression BITWISE_XOR and_expression {
             $$ = new expression();
             ST_entry* first_operand = ST->search_lexeme($1->location);                  // Get the first operand from the ST_entry table
             ST_entry* second_operand = ST->search_lexeme($3->location);                  // Get the second operand from the ST_entry table
@@ -991,13 +1054,11 @@ exclusive_or_expression:
         ;
 
 inclusive_or_expression: 
-        exclusive_or_expression
-        {
+        exclusive_or_expression {
             $$ = new expression();
             $$ = $1;                // copy content from right to left
         }
-        | inclusive_or_expression BITWISE_OR exclusive_or_expression
-        {
+        | inclusive_or_expression BITWISE_OR exclusive_or_expression {
             $$ = new expression();
             ST_entry* first_operand = ST->search_lexeme($1->location);                  // Get the first operand from the ST_entry table
             ST_entry* second_operand = ST->search_lexeme($3->location);                  // Get the second operand from the ST_entry table
@@ -1025,10 +1086,10 @@ inclusive_or_expression:
         ;
 
 logical_and_expression: 
-        inclusive_or_expression
-        {}
-        | logical_and_expression LOGICAL_AND M inclusive_or_expression
-        {
+        inclusive_or_expression {
+
+        }
+        | logical_and_expression LOGICAL_AND M inclusive_or_expression {
             /*
                 augmented the grammar with the non-terminal M marker to have a track of next instruction to be executed during backpatching
             */
@@ -1046,10 +1107,10 @@ logical_and_expression:
         ;
 
 logical_or_expression: 
-        logical_and_expression
-        {}
-        | logical_or_expression LOGICAL_OR M logical_and_expression
-        {
+        logical_and_expression {
+
+        }
+        | logical_or_expression LOGICAL_OR M logical_and_expression {
             backpatch($1->falselist, $3->instr);                    // Backpatching
             $$->truelist = merge_list($1->truelist, $4->truelist);       // Generate falselist by merging the falselists of $1 and $4
             $$->falselist = $4->falselist;                          // Generate truelist from truelist of $4
@@ -1063,12 +1124,10 @@ logical_or_expression:
         ;
 
 conditional_expression: 
-        logical_or_expression
-        {
+        logical_or_expression {
             $$ = $1;    // copy content from right to left
         }
-        | logical_or_expression N QUESTION_MARK M expression N COLON M conditional_expression
-        {   
+        | logical_or_expression N QUESTION_MARK M expression N COLON M conditional_expression {   
             /*
                 grammar is augmented with the non-terminals M marker and N to keep track of next instruction during backpatching
             */
@@ -1112,19 +1171,17 @@ conditional_expression:
         }
         ;
 
-M: %empty
-        {   
+M: %empty {   
             
             //M - > epsilon 
-            //store the count of theb next instruction and will be used for backpatching in control flow statements
+            //store the count of the next instruction and will be used for backpatching in control flow statements
             $$ = new expression();
             $$->instr = next_instruction;
         }
         ;
 
-N: %empty
-        {
-             // N -> epsilon 
+N: %empty {
+            // N -> epsilon 
             // Helps in control flow statments
            
             $$ = new expression();
@@ -1134,10 +1191,10 @@ N: %empty
         ;
 
 assignment_expression: 
-        conditional_expression
-        {}
-        | unary_expression assignment_operator assignment_expression
-        {
+        conditional_expression {
+
+        }
+        | unary_expression assignment_operator assignment_expression {
             ST_entry* sym1 = ST->search_lexeme($1->location);         // Get the first operand from the ST_entry table
             ST_entry* sym2 = ST->search_lexeme($3->location);         // Get the second operand from the ST_entry table
             if($1->order_dim == 0) {
@@ -1153,48 +1210,61 @@ assignment_expression:
         ;
 
 assignment_operator: 
-        ASSIGN_
-        {}
-        | MUL_ASSIGN
-        {}
-        | F_SLASH_ASSIGN
-        {}
-        | MODULO_ASSIGN
-        {}
-        | PLUSASSIGN
-        {}
-        | SUBTRACT_ASSIGN
-        {}
-        | LEFT_SHIFT_ASSIGN
-        {}
-        | RIGHT_SHIFT_ASSIGN
-        {}
-        | BITWISE_AND_ASSIGN
-        {}
-        | BITWISE_XOR_ASSIGN
-        {}
-        | BITWISE_OR_ASSIGN
-        {}
+        ASSIGN_ {
+
+        }
+        | MUL_ASSIGN {
+
+        }
+        | F_SLASH_ASSIGN {
+
+        }
+        | MODULO_ASSIGN {
+
+        }
+        | PLUSASSIGN {
+
+        }
+        | SUBTRACT_ASSIGN {
+
+        }
+        | LEFT_SHIFT_ASSIGN {
+
+        }
+        | RIGHT_SHIFT_ASSIGN {
+
+        }
+        | BITWISE_AND_ASSIGN {
+
+        }
+        | BITWISE_XOR_ASSIGN {
+
+        }
+        | BITWISE_OR_ASSIGN {
+
+        }
         ;
 
 expression: 
-        assignment_expression
-        {}
-        | expression COMMA assignment_expression
-        {}
+        assignment_expression {
+
+        }
+        | expression COMMA assignment_expression {
+
+        }
         ;
 
 constant_expression: 
-        conditional_expression
-        {}
+        conditional_expression {
+
+        }
         ;
 
 //declaration
 //these productions will be responsible for updating and creating symbol table
 
 declaration: 
-        declaration_specifiers init_declarator_list SEMICOLON
-        {
+        declaration_specifiers init_declarator_list SEMICOLON {
             data_dtype current_dtype = $1;
             int current_dsize = -1;
 
@@ -1271,204 +1341,230 @@ declaration:
                 }
             }
         }
-        | declaration_specifiers SEMICOLON
-        {}
+        | declaration_specifiers SEMICOLON {
+
+        }
         ;
 
 declaration_specifiers: 
-        storage_class_specifier declaration_specifiers
-        {}
-        |storage_class_specifier
-        {}
-        | type_specifier declaration_specifiers
-        {}
-        | type_specifier
-        {}
-        | type_qualifier declaration_specifiers
-        {}
-        | type_qualifier
-        {}
-        | function_specifier declaration_specifiers
-        {}
-        | function_specifier
-        {}
+        storage_class_specifier declaration_specifiers {
+
+        }
+        |storage_class_specifier {
+
+        }
+        | type_specifier declaration_specifiers {
+
+        }
+        | type_specifier {
+
+        }
+        | type_qualifier declaration_specifiers {
+
+        }
+        | type_qualifier {
+
+        }
+        | function_specifier declaration_specifiers {
+
+        }
+        | function_specifier {
+
+        }
         ;
 
 init_declarator_list: 
-        init_declarator
-        {
+        init_declarator {
             $$ = new vector<declaration*>;      // add all declarations to the vector
             $$->push_back($1);
         }
-        | init_declarator_list COMMA init_declarator
-        {
+        | init_declarator_list COMMA init_declarator {
             $1->push_back($3);                  // continue adding declaration to the vector
             $$ = $1;
         }
         ;
 
 init_declarator: 
-        declarator
-        {
+        declarator {
             $$ = $1;
             $$->initial_value = NULL;         // Initialize the initial_value to NULL as no initiali value given
         }
-        | declarator ASSIGN_ initializer
-        {   
+        | declarator ASSIGN_ initializer {   
             $$ = $1;
             $$->initial_value = $3;           // Initialize the initial_value to the value provided
         }
         ;
 
 storage_class_specifier: 
-        EXTERN
-        {}
-        | STATIC
-        {}
-        | AUTO
-        {}
-        | REGISTER
-        {}
+        EXTERN {
+
+        }
+        | STATIC {
+
+        }
+        | AUTO {
+
+        }
+        | REGISTER {
+
+        }
         ;
 
 type_specifier: 
-        VOID_
-        {
+        VOID_ {
             $$ = VOID;
         }
-        | CHAR_
-        {
+        | CHAR_ {
             $$ = CHAR;
         }
-        | SHORT
-        {}
-        | INT_
-        {
+        | SHORT {
+
+        }
+        | INT_ {
             $$ = INT; 
         }
-        | LONG
-        {}
-        | FLOAT_
-        {
+        | LONG {
+
+        }
+        | FLOAT_ {
             $$ = FLOAT;
         }
-        | DOUBLE
-        {}
-        | SIGNED
-        {}
-        | UNSIGNED
-        {}
-        | BOOL_
-        {}
-        | COMPLEX
-        {}
-        | IMAGINARY
-        {}
-        | enum_specifier
-        {}
+        | DOUBLE {
+
+        }
+        | SIGNED {
+
+        }
+        | UNSIGNED {
+
+        }
+        | BOOL_ {
+
+        }
+        | COMPLEX {
+
+        }
+        | IMAGINARY {
+
+        }
+        | enum_specifier {
+
+        }
         ;
 
 specifier_qualifier_list: 
-        type_specifier specifier_qualifier_list_opt
-        {}
-        | type_qualifier specifier_qualifier_list_opt
-        {}
+        type_specifier specifier_qualifier_list_opt {
+
+        }
+        | type_qualifier specifier_qualifier_list_opt {
+
+        }
         ;
 
 specifier_qualifier_list_opt: 
-        specifier_qualifier_list
-        {}
-        | %empty
-        {}
+        specifier_qualifier_list {
+
+        }
+        | %empty {
+
+        }
         ;
 
 enum_specifier: 
-        ENUM LEFT_CURLY enumerator_list RIGHT_CURLY
-        {}
-        | ENUM IDENTIFIER LEFT_CURLY enumerator_list RIGHT_CURLY
-        {}
-        | ENUM IDENTIFIER LEFT_CURLY enumerator_list COMMA RIGHT_CURLY
-        {}
-        | ENUM IDENTIFIER
-        {}
+        ENUM LEFT_CURLY enumerator_list RIGHT_CURLY {
+
+        }
+        | ENUM IDENTIFIER LEFT_CURLY enumerator_list RIGHT_CURLY {
+
+        }
+        | ENUM IDENTIFIER LEFT_CURLY enumerator_list COMMA RIGHT_CURLY {
+
+        }
+        | ENUM IDENTIFIER {
+
+        }
         ;
 
 enumerator_list: 
-        enumerator
-        {}
-        | enumerator_list COMMA enumerator
-        {}
+        enumerator {
+
+        }
+        | enumerator_list COMMA enumerator {
+
+        }
         ;
 
 enumerator: 
-        IDENTIFIER
-        {}
-        | IDENTIFIER ASSIGN_ constant_expression
-        {}
+        IDENTIFIER {
+
+        }
+        | IDENTIFIER ASSIGN_ constant_expression {
+
+        }
         ;
 
 type_qualifier: 
-        CONST
-        {}
-        | RESTRICT
-        {}
-        | VOLATILE
-        {}
+        CONST {
+
+        }
+        | RESTRICT {
+
+        }
+        | VOLATILE {
+
+        }
         ;
 
 function_specifier: 
-        INLINE
-        {}
+        INLINE {
+
+        }
         ;
 
 declarator: 
-        pointer direct_declarator
-        {
+        pointer direct_declarator {
             $$ = $2;
             $$->pointers = $1;
         }
-        | direct_declarator
-        {
+        | direct_declarator {
             $$ = $1;
             $$->pointers = 0;
         }
         ;
 
 direct_declarator: 
-        IDENTIFIER
-        {
+        IDENTIFIER {
             $$ = new declaration();
             $$->name = *($1);
         }
-        | LEFT_PARENTHESIS declarator RIGHT_PARENTHESIS
-        {}
-        | direct_declarator LEFT_SQUARE type_qualifier_list_opt RIGHT_SQUARE
-        {
+        | LEFT_PARENTHESIS declarator RIGHT_PARENTHESIS {
+
+        }
+        | direct_declarator LEFT_SQUARE type_qualifier_list_opt RIGHT_SQUARE {
             $1->type = ARRAY;       // Array type
             $1->next_elem_type = INT;     // Array of ints
             $$ = $1;
             $$->li.push_back(0);
         }
-        | direct_declarator LEFT_SQUARE type_qualifier_list_opt assignment_expression RIGHT_SQUARE
-        {
+        | direct_declarator LEFT_SQUARE type_qualifier_list_opt assignment_expression RIGHT_SQUARE {
             $1->type = ARRAY;       // Array type
             $1->next_elem_type = INT;     // Array of ints
             $$ = $1;
             int index = ST->search_lexeme($4->location)->initial_value->i;
             $$->li.push_back(index);
         }
-        | direct_declarator LEFT_SQUARE STATIC type_qualifier_list assignment_expression RIGHT_SQUARE
-        {}
-        | direct_declarator LEFT_SQUARE type_qualifier_list STATIC assignment_expression RIGHT_SQUARE
-        {}
-        | direct_declarator LEFT_SQUARE type_qualifier_list_opt MUL RIGHT_SQUARE
-        {
+        | direct_declarator LEFT_SQUARE STATIC type_qualifier_list assignment_expression RIGHT_SQUARE {
+
+        }
+        | direct_declarator LEFT_SQUARE type_qualifier_list STATIC assignment_expression RIGHT_SQUARE {
+
+        }
+        | direct_declarator LEFT_SQUARE type_qualifier_list_opt MUL RIGHT_SQUARE {
             $1->type = POINTER;     // Pointer type
             $1->next_elem_type = INT;
             $$ = $1;
         }
-        | direct_declarator LEFT_PARENTHESIS parameter_type_list_opt RIGHT_PARENTHESIS
-        {
+        | direct_declarator LEFT_PARENTHESIS parameter_type_list_opt RIGHT_PARENTHESIS {
             $$ = $1;
             $$->type = FUNCTION;    // Function type
             ST_entry* funcData = ST->search_lexeme($$->name, $$->type);
@@ -1493,46 +1589,51 @@ direct_declarator:
             ST = function_ST;         // Set the pointer to the ST_entry table to the function's ST_entry table
             add_TAC($$->name, "", "", FUNC_BEG);
         }
-        | direct_declarator LEFT_PARENTHESIS identifier_list RIGHT_PARENTHESIS
-        {}
+        | direct_declarator LEFT_PARENTHESIS identifier_list RIGHT_PARENTHESIS {
+
+        }
         ;
 
 parameter_type_list_opt:
-        parameter_type_list
-        {}
-        | %empty
-        {
+        parameter_type_list {
+
+        }
+        | %empty {
             $$ = new vector<param*>;
         }
         ;
 
 type_qualifier_list_opt: 
-        type_qualifier_list
-        {}
-        | %empty
-        {}
+        type_qualifier_list {
+
+        }
+        | %empty {
+
+        }
         ;
 
 pointer: 
-        MUL type_qualifier_list
-        {}
-        | MUL
-        {
+        MUL type_qualifier_list {
+
+        }
+        | MUL {
             $$ = 1;
         }
-        | MUL type_qualifier_list pointer
-        {}
-        | MUL pointer
-        {
+        | MUL type_qualifier_list pointer {
+
+        }
+        | MUL pointer {
             $$ = 1 + $2;
         }
         ;
 
 type_qualifier_list: 
-        type_qualifier
-        {}
-        | type_qualifier_list type_qualifier
-        {}
+        type_qualifier {
+
+        }
+        | type_qualifier_list type_qualifier {
+
+        }
         ;
 
 parameter_type_list: 
@@ -1541,21 +1642,18 @@ parameter_type_list:
         ;
 
 parameter_list: 
-        parameter_declaration
-        {
+        parameter_declaration {
             $$ = new vector<param*>;         // Create a new vector of parameters
             $$->push_back($1);              // Add the parameter to the vector
         }
-        | parameter_list COMMA parameter_declaration
-        {
+        | parameter_list COMMA parameter_declaration {
             $1->push_back($3);              // Add the parameter to the vector
             $$ = $1;
         }
         ;
 
 parameter_declaration: 
-        declaration_specifiers declarator
-        {
+        declaration_specifiers declarator {
             $$ = new param();
             $$->name = $2->name;
             if($2->type == ARRAY) {
@@ -1569,69 +1667,84 @@ parameter_declaration:
             else
                 $$->type.type = $1;
         }
-        | declaration_specifiers
-        {}
+        | declaration_specifiers {
+
+        }
         ;
 
 identifier_list: 
-        IDENTIFIER
-        {}
-        | identifier_list COMMA IDENTIFIER
-        {}
+        IDENTIFIER {
+
+        }
+        | identifier_list COMMA IDENTIFIER {
+
+        }
         ;
 
 type_name: 
-        specifier_qualifier_list
-        {}
+        specifier_qualifier_list {
+
+        }
         ;
 
 initializer: 
-        assignment_expression
-        {
+        assignment_expression {
             $$ = $1;   // copy content from right to left
         }
-        | LEFT_CURLY initializer_list RIGHT_CURLY
-        {}
-        | LEFT_CURLY initializer_list COMMA RIGHT_CURLY
-        {}
+        | LEFT_CURLY initializer_list RIGHT_CURLY {
+
+        }
+        | LEFT_CURLY initializer_list COMMA RIGHT_CURLY {
+
+        }
         ;
 
 initializer_list: 
-        designation_opt initializer
-        {}
-        | initializer_list COMMA designation_opt initializer
-        {}
+        designation_opt initializer {
+
+        }
+        | initializer_list COMMA designation_opt initializer {
+
+        }
         ;
 
 designation_opt: 
-        designation
-        {}
-        | %empty
-        {}
+        designation {
+
+        }
+        | %empty {
+
+        }
         ;
 
 designation: 
-        designator_list ASSIGN_
-        {}
+        designator_list ASSIGN_ {
+
+        }
         ;
 
 designator_list: 
-        designator
-        {}
-        | designator_list designator
-        {}
+        designator {
+
+        }
+        | designator_list designator {
+
+        }
         ;
 
 designator: 
-        LEFT_SQUARE constant_expression RIGHT_SQUARE
-        {}
-        | DOT IDENTIFIER
-        {}
+        LEFT_SQUARE constant_expression RIGHT_SQUARE {
+
+        }
+        | DOT IDENTIFIER {
+
+        }
         ;
 
 statement: 
-        labeled_statement
-        {}
+        labeled_statement {
+
+        }
         | compound_statement
         | expression_statement
         | selection_statement
@@ -1640,31 +1753,32 @@ statement:
         ;
 
 labeled_statement: 
-        IDENTIFIER COLON statement
-        {}
-        | CASE constant_expression COLON statement
-        {}
-        | DEFAULT COLON statement
-        {}
+        IDENTIFIER COLON statement {
+
+        }
+        | CASE constant_expression COLON statement {
+
+        }
+        | DEFAULT COLON statement {
+
+        }
         ;
 
 compound_statement: 
-        LEFT_CURLY RIGHT_CURLY
-        {}
-        | LEFT_CURLY block_item_list RIGHT_CURLY
-        {
+        LEFT_CURLY RIGHT_CURLY {
+
+        }
+        | LEFT_CURLY block_item_list RIGHT_CURLY {
             $$ = $2;
         }
         ;
 
 block_item_list: 
-        block_item
-        {
+        block_item {
             $$ = $1;    // copy content from right to left
             backpatch($1->nextlist, next_instruction);
         }
-        | block_item_list M block_item
-        {   
+        | block_item_list M block_item {   
             
             /*
                 M marker has been added to keep track of next instruction during backpatching
@@ -1676,18 +1790,17 @@ block_item_list:
         ;
 
 block_item: 
-        declaration
-        {
+        declaration {
             $$ = new expression();   // new expression node
         }
         | statement
         ;
 
 expression_statement: 
-        expression SEMICOLON
-        {}
-        | SEMICOLON
-        {
+        expression SEMICOLON {
+
+        }
+        | SEMICOLON {
             $$ = new expression();  // new expression node
         }
         ;
@@ -1699,7 +1812,7 @@ If Else
 
 %prec THEN is to remove conflicts/ambiguity
 
-Marker M to keep track of next isntruction and N to keep track of nextlist
+Marker M to keep track of next instruction and N to keep track of nextlist
 
 S -> if (B) M S1 N
 backpatch(B.truelist, M.instr )
@@ -1714,8 +1827,7 @@ S.nextlist = merge_list(temp, S2 .nextlist)
 
 */
 
-        IF LEFT_PARENTHESIS expression N RIGHT_PARENTHESIS M statement N
-        {
+        IF LEFT_PARENTHESIS expression N RIGHT_PARENTHESIS M statement N {
             /*
                 M and N markers help in backpatching
             */
@@ -1728,8 +1840,7 @@ S.nextlist = merge_list(temp, S2 .nextlist)
             $7->nextlist = merge_list($8->nextlist, $7->nextlist);
             $$->nextlist = merge_list($3->falselist, $7->nextlist);
         }
-        | IF LEFT_PARENTHESIS expression N RIGHT_PARENTHESIS M statement N ELSE M statement N
-        {
+        | IF LEFT_PARENTHESIS expression N RIGHT_PARENTHESIS M statement N ELSE M statement N {
             /*
                 M and N markers help in backpatching
             */
@@ -1744,15 +1855,15 @@ S.nextlist = merge_list(temp, S2 .nextlist)
             $$->nextlist = merge_list($$->nextlist, $11->nextlist);
             $$->nextlist = merge_list($$->nextlist, $12->nextlist);
         }
-        | SWITCH LEFT_PARENTHESIS expression RIGHT_PARENTHESIS statement
-        {}
+        | SWITCH LEFT_PARENTHESIS expression RIGHT_PARENTHESIS statement {
+
+        }
         ;
 
 iteration_statement: 
         // M and N markers are used as usual to keep a track of next instruction to be executed 
         //which would be used for backpatching. 
-        WHILE M LEFT_PARENTHESIS expression N RIGHT_PARENTHESIS M statement
-        {   
+        WHILE M LEFT_PARENTHESIS expression N RIGHT_PARENTHESIS M statement {   
             
             $$ = new expression();                      // Create a new expression
             add_TAC("", "", "", GOTO);                  // add TAC with missing label
@@ -1764,8 +1875,7 @@ iteration_statement:
             backpatch($4->truelist, $7->instr);         // Go to M2 and loop_statement if expression is true
             backpatch($8->nextlist, $2->instr);         // Go back to M1 and expression after one iteration of loop_statement
         }
-        | DO M statement M WHILE LEFT_PARENTHESIS expression N RIGHT_PARENTHESIS SEMICOLON
-        {
+        | DO M statement M WHILE LEFT_PARENTHESIS expression N RIGHT_PARENTHESIS SEMICOLON {
             
             $$ = new expression();                  // Create a new expression  
             backpatch($8->nextlist, next_instruction);     // Backpatching 
@@ -1774,8 +1884,7 @@ iteration_statement:
             backpatch($3->nextlist, $4->instr);     // Go to M2 to check expression after statement is complete
             $$->nextlist = $7->falselist;           // Exit loop if expression is false
         }
-        | FOR LEFT_PARENTHESIS expression_statement M expression_statement N M expression N RIGHT_PARENTHESIS M statement
-        {
+        | FOR LEFT_PARENTHESIS expression_statement M expression_statement N M expression N RIGHT_PARENTHESIS M statement {
             
             $$ = new expression();                   // Create a new expression
             add_TAC("", "", "", GOTO);
@@ -1790,21 +1899,22 @@ iteration_statement:
         ;
 
 jump_statement: 
-        GOTO_ IDENTIFIER SEMICOLON
-        {}
-        | CONTINUE SEMICOLON
-        {}
-        | BREAK SEMICOLON
-        {}
-        | RETURN_ SEMICOLON
-        {
+        GOTO_ IDENTIFIER SEMICOLON {
+
+        }
+        | CONTINUE SEMICOLON {
+
+        }
+        | BREAK SEMICOLON {
+
+        }
+        | RETURN_ SEMICOLON {
             if(ST->search_lexeme("RETVAL")->type.type == VOID) {
                 add_TAC("", "", "", RETURN);           // generate TAC quad when return type is void
             }
             $$ = new expression();
         }
-        | RETURN_ expression SEMICOLON
-        {
+        | RETURN_ expression SEMICOLON {
             if(ST->search_lexeme("RETVAL")->type.type == ST->search_lexeme($2->location)->type.type) {
                 add_TAC($2->location, "", "", RETURN);      // generate TAC quad when return type is not void
             }
@@ -1813,24 +1923,28 @@ jump_statement:
         ;
 
 translation_unit: 
-        external_declaration
-        {}
-        | translation_unit external_declaration
-        {}
+        external_declaration {
+
+        }
+        | translation_unit external_declaration {
+
+        }
         ;
 
 external_declaration: 
-        function_definition
-        {}
-        | declaration
-        {}
+        function_definition {
+
+        }
+        | declaration {
+
+        }
         ;
 
 function_definition: 
-        declaration_specifiers declarator declaration_list compound_statement
-        {}
-        | function_prototype compound_statement
-        {
+        declaration_specifiers declarator declaration_list compound_statement {
+
+        }
+        | function_prototype compound_statement {
             ST = &ST_global;                     // Reset the symbol table to global symbol table
             add_TAC($1->name, "", "", FUNC_END);
         }
@@ -1838,8 +1952,7 @@ function_definition:
 
 function_prototype:
         //function initialiser
-        declaration_specifiers declarator
-        {
+        declaration_specifiers declarator {
             data_dtype current_dtype = $1;//extract the type of return 
             int current_dsize = -1;
             if(current_dtype == CHAR)
@@ -1862,10 +1975,12 @@ function_prototype:
         ;
 
 declaration_list: 
-        declaration
-        {}
-        | declaration_list declaration
-        {}
+        declaration {
+
+        }
+        | declaration_list declaration {
+            
+        }
         ;
 
 %%

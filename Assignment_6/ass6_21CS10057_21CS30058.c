@@ -102,7 +102,7 @@ int printInt(int n){
     return bytes;
 }
 
-int readFlt(float* f){
+float readFlt(float* f){
     int integralPart = 0;
     float decimalPart = 0;
     int len;

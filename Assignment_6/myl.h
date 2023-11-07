@@ -5,6 +5,6 @@
 int printStr(char *);
 int printInt(int);
 int readInt(int *);
-int readFlt(float *);
+float readFlt(float *);
 int printFlt(float);
 #endif
