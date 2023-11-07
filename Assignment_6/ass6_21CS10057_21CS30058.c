@@ -1,6 +1,6 @@
 #include "myl.h"
 
-#define BUFF 50
+#define BUFF 100
 
 int printStr(char *s){
     int stringLen = 0;                      // Length of the string
