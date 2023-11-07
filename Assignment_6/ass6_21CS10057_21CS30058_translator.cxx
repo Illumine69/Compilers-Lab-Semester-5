@@ -1,11 +1,11 @@
-/**
-* Pranav Mehrotra, 20CS10085
-* Saransh Sharma, 20CS30065
-* Compilers Laboratory
-* Assignment 6
-*
-* Source file for translation
+/*
+Name: Sanskar Mittal              Roll No:   21CS10057
+Name: Voddula Karthik Reddy       Roll No:   21CS30058
+Semester: 5th
+Assignment 6: Target Code Generator for tinyC
+File: Tranlator 
 */
+
 
 #include "ass6_21CS10057_21CS30058_translator.h"
 #include <iomanip>
