@@ -272,8 +272,8 @@ void generate_assembly(quad q, ofstream &sfile)
                     {
 
 
-                        sfile <<sfile << "\tmovq\t$" << float2hex(q.arg1) << ", " << "%rax" << endl;
-                        sfile <<sfile << "\tmovq\t$" << "%rax" << ", " << "%xmm0" << endl;
+                       sfile << "\tmovq\t$" << float2Hex(q.arg1) << ", " << "%rax" << endl;
+                       sfile << "\tmovq\t$" << "%rax" << ", " << "%xmm0" << endl;
 
 
                         sfile << "\tmovss\t$" << "%xmm0" << ", " << toPrintRes << endl;
