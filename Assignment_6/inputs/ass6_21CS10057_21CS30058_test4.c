@@ -9,20 +9,20 @@ int main() {
         printStr("Entered for iteration ");
         printInt(loop_count++);            // Incrementor in printStr
         printStr("\n");
-    } while (loop_count < 10);
+    } while (loop_count < 15);
 
     // Scope management 
     { 
-        int p = 32;
+        int p = 3;
         printStr("\nScope 1: ");
         printInt(p);
         { 
-            int p = 27;
+            int p = 30;
             printStr("\nScope 2: ");
             printInt(p);
             { 
-                int p = 13;
-                if (p == 13) {
+                int p = 8;
+                if (p == 8) {
                     printStr("\nEntered in the p == 13 condition if block.");
                 }
                 printStr("\nScope 3: ");

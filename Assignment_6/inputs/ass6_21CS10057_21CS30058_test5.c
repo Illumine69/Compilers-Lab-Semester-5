@@ -27,14 +27,16 @@ void print_arr (int a[], int n) {
 int main() {
     printStr("Merge Sort\n");
     
-    int n = 6;
-    int a[6];
-    a[0] = 123;
+    int n = 8;
+    int a[8];
+    a[0] = 12;
     a[1] = 1;
-    a[2] = 34;
-    a[3] = 3212;
-    a[4] = 344;
-    a[5] = 2;
+    a[2] = 36;
+    a[3] = 322;
+    a[4] = 100;
+    a[5] = 98;
+    a[6] = 45;
+    a[7] = 23;
  
     printStr("Original array: \n");
     print_arr(a, n);

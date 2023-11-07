@@ -15,7 +15,7 @@ int main () {
     int flag;
     printStr("Enter x: ");
     x = readInt(&flag);
-    printStr("Enter y: ");
+    printStr("Enter y(non zero): ");
     y = readInt(&flag);
     char ch = 'c';              // Character definitions
 

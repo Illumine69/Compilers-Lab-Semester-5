@@ -24,13 +24,22 @@ int max_sub_array_sum (int a[], int n) {                 // Array as parameter
 int main() { 
     int a[8];
     a[0]= -12;
-    a[1]= -87;
+    a[1]= 87;
     a[2]= 23;
     a[3]= -6;
     a[4]= -43;
     a[5]= 320;
     a[6]= 233;
     a[7]= -87;
+    
+    int i;
+    for(i = 0; i < 8; i++){
+        printStr("a[");
+        printInt(i);
+        printStr("] = ");
+        printInt(a[i]);
+        printStr("\n");
+    }
     int max_subArr_sum = max_sub_array_sum(a, 8);        // Passing array as argument
     printStr("Maximum sum of a contiguous sub array: ");
     printInt(max_subArr_sum);
