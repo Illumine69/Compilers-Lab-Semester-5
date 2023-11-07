@@ -13,10 +13,29 @@ File: Target Translator
 #include <stack>
 using namespace std;
 
+
+
+
+
+
 // External variables
 extern quad_TAC_arr TAC_list;
 extern symbol_table *ST;
 extern symbol_table ST_global;
+
+string float2Hex(float f) {
+   // Create a uint32_t pointer to interpret the bits of the float
+    uint32_t* floatBits = reinterpret_cast<uint32_t*>(&f);
+
+    // Get the bits as a hexadecimal string
+    stringstream ss;
+    ss << hex << setfill('0') << setw(8) << *floatBits;
+    
+    return ss.str();
+}
+
+
+
 
 // Declare global variables
 string assembly_file;
@@ -237,13 +256,43 @@ void generate_assembly(quad q, ofstream &sfile)
         }
         else
         {
-            if (q.arg1[0] < '0' || q.arg1[0] > '9')
+
+
+            if (q.result[0] != 't' || location3->type.type == FLOAT || location3->type.type == POINTER)
             {
-                sfile << "\tmovss\t" << toPrint1 << ", %xmm0" << endl;
-                sfile << "\tmovss\t%xmm0, " << toPrintRes << endl;
+                if (location3->type.type != POINTER)
+                {
+                    if (q.arg1[0] < '0' || q.arg1[0] > '9')
+                    {
+                        sfile << "\tmovss\t" << toPrint1 << ", %xmm0" << endl;
+                        sfile << "\tmovss\t%xmm0, " << toPrintRes << endl;
+                    }
+                    else
+
+                    {
+
+
+                        sfile <<sfile << "\tmovq\t$" << float2hex(q.arg1) << ", " << "%rax" << endl;
+                        sfile <<sfile << "\tmovq\t$" << "%rax" << ", " << "%xmm0" << endl;
+
+
+                        sfile << "\tmovss\t$" << "%xmm0" << ", " << toPrintRes << endl;
+
+
+                    }
+                }
+                else
+                {
+                    sfile << "\tmovq\t" << toPrint1 << ", %rax" << endl;
+                    sfile << "\tmovq\t%rax, " << toPrintRes << endl;
+                }
             }
             else
-                sfile << "\tmovss\t$" << q.arg1 << ", " << toPrintRes << endl;
+            {
+                int temp = q.arg1[0];
+                sfile << "\tmovb\t$" << temp << ", " << toPrintRes << endl;
+            }
+            
         }
     }
 
