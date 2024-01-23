@@ -373,7 +373,6 @@ void changeTable (symtable* newtable) {	// Change current symbol currTable
 	currTable = newtable;
 } 
 
-
 int nextinstr() {
 	return q.qArray.size();
 }
